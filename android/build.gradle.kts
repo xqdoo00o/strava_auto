@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20")
     }
 }
 
@@ -32,31 +32,18 @@ subprojects {
 }
 
 subprojects {
-    val configure = {
-          tasks.withType<KotlinCompile>().configureEach {
-              println("Configuring Kotlin for project: ${project.name}")
-              if (project.name == "file_picker") {
-                  kotlinOptions {
-                      jvmTarget = "11"
-                  }
-              } else if (project.name == "shared_preferences_android") {
-                  kotlinOptions {
-                      jvmTarget = "17"
-                  }
-              } else {
-                  kotlinOptions {
-                      jvmTarget = "1.8"
-                  }
-              }
-          }
-      }
-
-    if (state.executed) {
-        configure()
-    } else {
-        afterEvaluate {
-            configure()
+    // 1. 处理 Kotlin 编译任务
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            // 使用更通用的方式设置 JVM 目标
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+    }
+
+    // 2. 处理 Java 编译任务
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
     }
 }
 

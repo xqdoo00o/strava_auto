@@ -8,6 +8,7 @@ import 'package:app_links/app_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
@@ -16,12 +17,25 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'theme_manager.dart';
 import 'locale_manager.dart';
+import 'coord_manager.dart';
+import 'coord_fixer.dart';
+import 'strava_setting.dart';
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
+import 'package:flutter/foundation.dart';
+import 'package:cross_file/cross_file.dart';
 import 'privacy_policy_page.dart';
 import 'background_service.dart';
 
-void main() {
+import 'package:get_it/get_it.dart';
+
+final getIt = GetIt.instance;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  BackgroundService.initialize();
+  if (!kIsWeb) BackgroundService.initialize();
+  final stravaService = StravaService();
+  await stravaService.init(); // 等待从存储中读取数据
+  getIt.registerSingleton<StravaService>(stravaService);
   runApp(const UpstraApp());
 }
 
@@ -31,7 +45,11 @@ class UpstraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([ThemeManager(), LocaleManager()]),
+      animation: Listenable.merge([
+        ThemeManager(),
+        LocaleManager(),
+        CoordManager(),
+      ]),
       builder: (context, child) {
         return MaterialApp(
           onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
@@ -71,7 +89,10 @@ class UpstraApp extends StatelessWidget {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 1),
+                side: BorderSide(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  width: 1,
+                ),
               ),
               color: Colors.white,
             ),
@@ -80,7 +101,10 @@ class UpstraApp extends StatelessWidget {
                 backgroundColor: const Color(0xFFFC4C02),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -114,7 +138,10 @@ class UpstraApp extends StatelessWidget {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
               ),
               color: const Color(0xFF1E1E1E),
             ),
@@ -123,7 +150,10 @@ class UpstraApp extends StatelessWidget {
                 backgroundColor: const Color(0xFFFC4C02),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -140,7 +170,8 @@ class UpstraApp extends StatelessWidget {
           onGenerateRoute: (settings) {
             // If this is the auth redirect, show a transient loading page instead of pushing a new DashboardPage
             final routeName = settings.name?.toLowerCase() ?? '';
-            if (routeName.contains('code=') || routeName.startsWith('starvaauto://')) {
+            if (routeName.contains('code=') ||
+                routeName.startsWith('starvaauto://')) {
               return MaterialPageRoute(
                 builder: (context) => const AuthCallbackPage(),
               );
@@ -182,9 +213,7 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(
-              color: Color(0xFFFC4C02),
-            ),
+            const CircularProgressIndicator(color: Color(0xFFFC4C02)),
             const SizedBox(height: 16),
             Text(
               AppLocalizations.of(context)!.finalizingConnection,
@@ -204,10 +233,11 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with SingleTickerProviderStateMixin {
-  final StravaService _stravaService = StravaService();
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
+  final StravaService _stravaService = GetIt.I<StravaService>();
   final _appLinks = AppLinks();
-  
+
   StreamSubscription<Uri>? _sub;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
 
@@ -225,15 +255,15 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     _initStrava();
     _initDeepLinks();
-    _initSharingIntent();
-    
+    if (!kIsWeb) _initSharingIntent();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPrivacyPolicy();
     });
@@ -268,7 +298,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
 
   Future<void> _initStrava() async {
     try {
-      await _stravaService.init();
       setState(() {
         _isConnected = _stravaService.isAuthenticated;
       });
@@ -282,43 +311,64 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     }
   }
 
-  void _initDeepLinks() {
-    _sub = _appLinks.uriLinkStream.listen((uri) {
-      _addLog("Received link: $uri");
-      if (uri.scheme == 'starvaauto') {
-        _handleAuthCallback(uri);
-      } else if (uri.scheme == 'file') {
-        // Handle file open request (iOS "Open with...")
-        try {
-          final filePath = uri.toFilePath();
-          if (filePath.toLowerCase().endsWith('.fit')) {
-            _addLog("Detected FIT file from link: $filePath");
-            // Delay slightly to ensure UI is ready if app was just launched
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) _showUploadDialog(File(filePath));
-            });
-          } else {
-            _addLog("Ignored non-FIT file link: ${uri.pathSegments.last}", isError: true);
-          }
-        } catch (e) {
-          _addLog("Error parsing file link: $e", isError: true);
-        }
+  void _initDeepLinks() async {
+    if (kIsWeb) {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null &&
+          initialUri.queryParameters.containsKey('code')) {
+        _addLog("初始链接捕获: $initialUri");
+        _handleAuthCallback(initialUri);
       }
-    }, onError: (err) {
-      _addLog("Deep link error: $err", isError: true);
-    });
+    } else {
+      _sub = _appLinks.uriLinkStream.listen(
+        (uri) {
+          _addLog("Received link: $uri");
+          if (uri.scheme == 'starvaauto') {
+            _handleAuthCallback(uri);
+          } else if (uri.scheme == 'file') {
+            // Handle file open request (iOS "Open with...")
+            try {
+              final filePath = uri.toFilePath();
+              final ext = p.extension(filePath).toLowerCase();
+              if (ext == '.fit' || ext == '.gpx' || ext == '.tcx') {
+                _addLog("Detected file from link: $filePath");
+                // Delay slightly to ensure UI is ready if app was just launched
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) _showUploadDialog(XFile(filePath));
+                });
+              } else {
+                _addLog(
+                  "Ignored non-supported file link: ${uri.pathSegments.last}",
+                  isError: true,
+                );
+              }
+            } catch (e) {
+              _addLog("Error parsing file link: $e", isError: true);
+            }
+          }
+        },
+        onError: (err) {
+          _addLog("Deep link error: $err", isError: true);
+        },
+      );
+    }
   }
 
   void _initSharingIntent() {
     // While running
-    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
-      if (value.isNotEmpty) _handleSharedFiles(value);
-    }, onError: (err) {
-      _addLog("Sharing intent error: $err", isError: true);
-    });
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      (List<SharedMediaFile> value) {
+        if (value.isNotEmpty) _handleSharedFiles(value);
+      },
+      onError: (err) {
+        _addLog("Sharing intent error: $err", isError: true);
+      },
+    );
 
     // Initial launch
-    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+    ReceiveSharingIntent.instance.getInitialMedia().then((
+      List<SharedMediaFile> value,
+    ) {
       if (value.isNotEmpty) _handleSharedFiles(value);
     });
   }
@@ -328,13 +378,20 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   Future<void> _handleAuthCallback(Uri uri) async {
     _addLog("Processing authorization...");
     try {
-      final success = await _stravaService.handleAuthCallback(uri.toString());
+      final success = await _stravaService.handleAuthCallback(uri);
       if (mounted) {
         setState(() {
           _isConnected = success;
         });
         if (success) {
           _addLog("Authorization successful! Ready to upload.");
+          if (kIsWeb) {
+            try {
+              clearURLParameter();
+            } catch (e) {
+              _addLog("Failed to clear URL parameters: $e", isError: true);
+            }
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppLocalizations.of(context)!.connectedSuccess),
@@ -356,7 +413,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.connectionError(e.toString())),
+            content: Text(
+              AppLocalizations.of(context)!.connectionError(e.toString()),
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -366,9 +425,18 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   }
 
   Future<void> _connectToStrava() async {
+    // 1. 检查凭据，如果没有，则显示弹窗并等待
     if (!_stravaService.hasCredentials) {
       _addLog("Missing Client ID/Secret configuration.", isError: true);
-      return;
+
+      bool shouldDisconnect = await StravaConfigUtils.showStravaConfigDialog(
+        context,
+      );
+
+      if (!shouldDisconnect) {
+        _addLog("Configuration cancelled by user.");
+        return;
+      }
     }
     try {
       final url = _stravaService.getAuthorizationUrl();
@@ -419,11 +487,15 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     _addLog("Received shared files: ${files.length}");
     for (var file in files) {
       _addLog("Checking file: ${file.path}");
-      if (file.path.toLowerCase().endsWith('.fit')) {
-        _showUploadDialog(File(file.path));
-        break; 
+      final ext = p.extension(file.path).toLowerCase();
+      if (ext == '.fit' || ext == '.gpx' || ext == '.tcx') {
+        _showUploadDialog(XFile(file.path));
+        break;
       } else {
-        _addLog("Ignored non-FIT file: ${file.path.split('/').last}", isError: true);
+        _addLog(
+          "Ignored non-supported file: ${file.path.split('/').last}",
+          isError: true,
+        );
       }
     }
   }
@@ -432,33 +504,38 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['fit'],
+        allowedExtensions: ['fit', 'gpx', 'tcx'],
       );
-
-      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
-        _showUploadDialog(File(result.files.single.path!));
+      if (result != null && result.xFiles.isNotEmpty) {
+        _showUploadDialog(result.xFiles.single);
       }
     } catch (e) {
       _addLog("File picker error: $e", isError: true);
     }
   }
 
-  void _showUploadDialog(File file) {
+  void _showUploadDialog(XFile file) {
     if (!_isConnected) {
-      _addLog("Please connect to Strava to upload ${file.path.split('/').last}", isError: true);
+      _addLog("Please connect to Strava to upload ${file.name}", isError: true);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseConnectFirst)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseConnectFirst),
+        ),
       );
       return;
     }
-
+    String tempSportType = 'Default';
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (context) => StatefulBuilder(
+      // 2. 使用 StatefulBuilder 来管理弹窗内部状态
+      builder: (context, setModalState) {
+        final theme = Theme.of(context);
+        return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: theme.scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
@@ -474,16 +551,16 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
           children: [
             Text(
               AppLocalizations.of(context)!.uploadActivityTitle,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -492,8 +569,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      file.path.split('/').last,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      file.name,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
@@ -503,7 +580,45 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            // --- 3. 插入 SegmentedButton ---
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  // visualDensity: VisualDensity(horizontal: 1, vertical: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                segments: [
+                  ButtonSegment(
+                    value: 'Default',
+                    label: Text(AppLocalizations.of(context)!.defaultStr),
+                    icon: const Icon(Icons.star_border),
+                  ),
+                  ButtonSegment(
+                    value: 'Run',
+                    label: Text(AppLocalizations.of(context)!.run),
+                    icon: const Icon(Icons.directions_run_rounded),
+                  ),
+                  ButtonSegment(
+                    value: 'Ride',
+                    label: Text(AppLocalizations.of(context)!.ride),
+                    icon: const Icon(Icons.directions_bike_rounded),
+                  ),
+                ],
+                selected: {tempSportType},
+                onSelectionChanged: (newSelection) {
+                  // 使用 setModalState 刷新底部弹窗的 UI
+                  setModalState(() {
+                    tempSportType = newSelection.first;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 32),
             Row(
               children: [
                 Expanded(
@@ -511,7 +626,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Text(AppLocalizations.of(context)!.cancelButton),
                   ),
@@ -521,7 +638,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context); // Close dialog first
-                      _uploadFile(file);
+                      _uploadFile(file, tempSportType);
                     },
                     child: Text(AppLocalizations.of(context)!.uploadNowButton),
                   ),
@@ -531,25 +648,23 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             const SizedBox(height: 20),
           ],
         ),
+      );
+      }
       ),
     );
   }
 
-  Future<void> _uploadFile(File file) async {
-    File uploadFile = file;
-    
-    // iOS Sandboxing Fix: Copy file to app's temp directory
+  Future<void> _uploadFile(XFile file, String type) async {
+    XFile uploadFile = file;
+
+    //iOS Sandboxing Fix: Copy file to app's temp directory
     if (Platform.isIOS) {
       try {
         final tempDir = await getTemporaryDirectory();
-        final newPath = '${tempDir.path}/${file.path.split('/').last}';
-        final newFile = File(newPath);
-        
+        final newPath = '${tempDir.path}/${file.name}';
         // Read bytes from the original (restricted) path and write to our temp path
-        final bytes = await file.readAsBytes();
-        await newFile.writeAsBytes(bytes);
-        
-        uploadFile = newFile;
+        File(file.path).copy(newPath);
+        uploadFile = XFile(newPath);
         _addLog("Copied file to temp: $newPath");
       } catch (e) {
         _addLog("Failed to copy file: $e", isError: true);
@@ -565,19 +680,22 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     setState(() {
       _isUploading = true;
     });
-    // Navigator.of(context).pop(); // REMOVED: Dialog should be closed by the caller
-    
-    final fileName = uploadFile.path.split('/').last;
-    _addLog("Starting upload: $fileName...");
 
+    final fileName = uploadFile.name;
+    _addLog("Starting upload: $fileName...");
+    if (CoordManager().gcjCorrection == true) {
+      uploadFile = await CoordFixer.processFile(uploadFile);
+    }
     try {
-      final resultMsg = await _stravaService.uploadFitFile(uploadFile);
+      final resultMsg = await _stravaService.uploadStravaFile(uploadFile, type);
       _addLog("Success: $resultMsg");
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.uploadFileSuccess(fileName)),
+            content: Text(
+              AppLocalizations.of(context)!.uploadFileSuccess(fileName),
+            ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -588,7 +706,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.uploadFileFailed(fileName)),
+            content: Text(
+              AppLocalizations.of(context)!.uploadFileFailed(fileName),
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -619,9 +739,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildStatusCard(theme),
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // Main Action Area
             Expanded(
               flex: 2,
@@ -630,7 +750,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                 child: _buildMainActionArea(theme),
               ),
             ),
-            
+
             const SizedBox(height: 30),
           ],
         ),
@@ -652,7 +772,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _isConnected ? const Color(0xFFFC4C02).withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+            color: _isConnected
+                ? const Color(0xFFFC4C02).withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -678,20 +800,24 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isConnected 
-                    ? AppLocalizations.of(context)!.statusConnected 
-                    : AppLocalizations.of(context)!.statusNotConnected,
+                  _isConnected
+                      ? AppLocalizations.of(context)!.statusConnected
+                      : AppLocalizations.of(context)!.statusNotConnected,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: _isConnected ? Colors.white : theme.textTheme.titleMedium?.color,
+                    color: _isConnected
+                        ? Colors.white
+                        : theme.textTheme.titleMedium?.color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  _isConnected 
-                    ? AppLocalizations.of(context)!.readyToSync 
-                    : AppLocalizations.of(context)!.connectToStart,
+                  _isConnected
+                      ? AppLocalizations.of(context)!.readyToSync
+                      : AppLocalizations.of(context)!.connectToStart,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: _isConnected ? Colors.white.withValues(alpha: 0.9) : theme.hintColor,
+                    color: _isConnected
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : theme.hintColor,
                   ),
                 ),
               ],
@@ -701,10 +827,13 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             icon: const Icon(Icons.settings_rounded),
             color: _isConnected ? Colors.white : theme.iconTheme.color,
             tooltip: AppLocalizations.of(context)!.settingsTooltip,
-            onPressed: () {
-              Navigator.of(context).push(
+            onPressed: () async {
+              final result = await Navigator.of(context).push<bool?>(
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
+              if (result == true && mounted) {
+                _disconnect();
+              }
             },
           ),
           if (_isConnected) ...[
@@ -727,20 +856,23 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.lock_outline_rounded, size: 48, color: theme.disabledColor),
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 48,
+              color: theme.disabledColor,
+            ),
             const SizedBox(height: 16),
             Text(
               AppLocalizations.of(context)!.unlockUpload,
-              style: theme.textTheme.bodyLarge?.copyWith(color: theme.disabledColor),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.disabledColor,
+              ),
             ),
             const SizedBox(height: 24),
             InkWell(
               onTap: _connectToStrava,
               borderRadius: BorderRadius.circular(4),
-              child: Image.asset(
-                'assets/strava.png',
-                height: 48,
-              ),
+              child: Image.asset('assets/strava.png', height: 48),
             ),
           ],
         ),
@@ -760,7 +892,11 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                   color: const Color(0xFFFC4C02).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.cloud_upload_rounded, size: 60, color: Color(0xFFFC4C02)),
+                child: const Icon(
+                  Icons.cloud_upload_rounded,
+                  size: 60,
+                  color: Color(0xFFFC4C02),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -785,7 +921,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             style: BorderStyle.none,
           ),
           boxShadow: [
-             BoxShadow(
+            BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
@@ -807,7 +943,11 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                   color: theme.scaffoldBackgroundColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.add_rounded, size: 40, color: theme.colorScheme.primary),
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 40,
+                  color: theme.colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -819,7 +959,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
               const SizedBox(height: 8),
               Text(
                 AppLocalizations.of(context)!.orShare,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
               ),
             ],
           ),
@@ -827,7 +969,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
       ),
     );
   }
-
 }
 
 class DashedBorderPainter extends CustomPainter {
@@ -835,7 +976,11 @@ class DashedBorderPainter extends CustomPainter {
   final double strokeWidth;
   final double gap;
 
-  DashedBorderPainter({required this.color, this.strokeWidth = 1.0, this.gap = 5.0});
+  DashedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0,
+    this.gap = 5.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -845,16 +990,24 @@ class DashedBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final Path path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(24),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          const Radius.circular(24),
+        ),
+      );
 
-    final Path dashedPath = _dashPath(path, dashArray: CircularIntervalList<double>([10, gap]));
+    final Path dashedPath = _dashPath(
+      path,
+      dashArray: CircularIntervalList<double>([10, gap]),
+    );
     canvas.drawPath(dashedPath, paint);
   }
 
-  Path _dashPath(Path source, {required CircularIntervalList<double> dashArray}) {
+  Path _dashPath(
+    Path source, {
+    required CircularIntervalList<double> dashArray,
+  }) {
     final Path dest = Path();
     for (final ui.PathMetric metric in source.computeMetrics()) {
       double distance = 0.0;
@@ -862,7 +1015,10 @@ class DashedBorderPainter extends CustomPainter {
       while (distance < metric.length) {
         final double len = dashArray.next;
         if (draw) {
-          dest.addPath(metric.extractPath(distance, distance + len), Offset.zero);
+          dest.addPath(
+            metric.extractPath(distance, distance + len),
+            Offset.zero,
+          );
         }
         distance += len;
         draw = !draw;

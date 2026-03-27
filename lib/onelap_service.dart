@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'package:cross_file/cross_file.dart';
 
 class OneLapService {
   static const String _loginUrl = 'https://www.onelap.cn/api/login';
@@ -111,12 +113,18 @@ class OneLapService {
     }
   }
 
-  Future<File> downloadFit(String url, String savePath) async {
+  Future<XFile> downloadFit(String url, String savePath) async {
     final response = await http.post(Uri.parse(url)); // User example says POST for download
     if (response.statusCode == 200) {
-      final file = File(savePath);
-      await file.writeAsBytes(response.bodyBytes);
-      return file;
+      final XFile xfile;
+      if (kIsWeb){
+        xfile = XFile.fromData(response.bodyBytes, name: savePath);
+      }else{
+        final file = File(savePath);
+        await file.writeAsBytes(response.bodyBytes);
+        xfile = XFile(file.path);
+      }
+      return xfile;
     } else {
       throw Exception('Failed to download file: ${response.statusCode}');
     }

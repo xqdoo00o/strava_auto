@@ -176,6 +176,18 @@ abstract class AppLocalizations {
   /// **'Select Language'**
   String get selectLanguageTitle;
 
+  /// No description provided for @coordCorrection.
+  ///
+  /// In en, this message translates to:
+  /// **'Coord Correction'**
+  String get coordCorrection;
+
+  /// No description provided for @coordCorrectionTip.
+  ///
+  /// In en, this message translates to:
+  /// **'If coordinate offset occurs after uploading the file, enable pls.'**
+  String get coordCorrectionTip;
+
   /// No description provided for @logoutConfirmationTitle.
   ///
   /// In en, this message translates to:
@@ -193,6 +205,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm'**
   String get confirmButton;
+
+  /// No description provided for @defaultStr.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultStr;
+
+  /// No description provided for @run.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get run;
+
+  /// No description provided for @ride.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride'**
+  String get ride;
+
+  /// No description provided for @stravaChangeTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Strava API changes: Please reconnect your Strava account.'**
+  String get stravaChangeTip;
 
   /// No description provided for @privacyPolicyTitle.
   ///
@@ -503,7 +539,7 @@ abstract class AppLocalizations {
   /// No description provided for @tapToSelect.
   ///
   /// In en, this message translates to:
-  /// **'Tap to Select .FIT File'**
+  /// **'Tap to Select .FIT .GPX .TCX File'**
   String get tapToSelect;
 
   /// No description provided for @orShare.

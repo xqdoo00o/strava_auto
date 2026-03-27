@@ -48,6 +48,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectLanguageTitle => '选择语言';
 
   @override
+  String get coordCorrection => '坐标纠偏';
+
+  @override
+  String get coordCorrectionTip => '上传文件后如坐标偏移可开启';
+
+  @override
   String get logoutConfirmationTitle => '断开连接？';
 
   @override
@@ -55,6 +61,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get confirmButton => '确定';
+
+  @override
+  String get defaultStr => '默认';
+
+  @override
+  String get run => '跑步';
+
+  @override
+  String get ride => '骑行';
+
+  @override
+  String get stravaChangeTip => 'Strava API 变更，请重新连接 Strava 账号。';
 
   @override
   String get privacyPolicyTitle => '隐私政策';
@@ -219,7 +237,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uploading => '正在上传...';
 
   @override
-  String get tapToSelect => '点击选择 .FIT 文件';
+  String get tapToSelect => '点击选择 .FIT .GPX .TCX文件';
 
   @override
   String get orShare => '或从其他应用分享';

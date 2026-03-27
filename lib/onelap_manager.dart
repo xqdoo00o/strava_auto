@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 
-// Duplicate service logic here to make it self-contained for background tasks if needed, 
+// Duplicate service logic here to make it self-contained for background tasks if needed,
 // or just import the service. Importing is better.
 import 'onelap_service.dart';
 import 'strava_service.dart';
@@ -16,7 +18,7 @@ class OneLapManager extends ChangeNotifier {
 
   final _storage = const FlutterSecureStorage();
   final _service = OneLapService();
-  final _stravaService = StravaService(); // Ensure this is initialized
+  final _stravaService = GetIt.I<StravaService>();
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -37,10 +39,10 @@ class OneLapManager extends ChangeNotifier {
         await _storage.write(key: 'onelap_username', value: username);
         await _storage.write(key: 'onelap_password', value: password);
         _username = username;
-        
+
         // Initial sync of existing activities (mark as synced without uploading)
         await _markAllAsSynced();
-        
+
         notifyListeners();
         return true;
       }
@@ -62,9 +64,13 @@ class OneLapManager extends ChangeNotifier {
     try {
       final activities = await _service.getActivities();
       final prefs = await SharedPreferences.getInstance();
-      final List<String> syncedIds = activities.map((e) => e['fileKey'].toString()).toList();
+      final List<String> syncedIds = activities
+          .map((e) => e['fileKey'].toString())
+          .toList();
       await prefs.setStringList('onelap_synced_ids', syncedIds);
-      LogManager().addLog("Marked ${syncedIds.length} OneLap activities as synced.");
+      LogManager().addLog(
+        "Marked ${syncedIds.length} OneLap activities as synced.",
+      );
     } catch (e) {
       LogManager().addLog("Failed to mark initial sync: $e", isError: true);
     }
@@ -92,59 +98,66 @@ class OneLapManager extends ChangeNotifier {
       final loginResult = await _service.login(username, password);
       if (loginResult['success'] != true) {
         LogManager().addLog("OneLap Sync Failed: Login error.");
-        throw Exception("Login failed: ${loginResult['msg'] ?? 'Unknown error'}");
+        throw Exception(
+          "Login failed: ${loginResult['msg'] ?? 'Unknown error'}",
+        );
       }
 
       // 3. Fetch list
       LogManager().addLog("OneLap Sync: Fetching activities...");
       final activities = await _service.getActivities();
-      
+
       // 4. Compare with local
       final prefs = await SharedPreferences.getInstance();
       final syncedIds = prefs.getStringList('onelap_synced_ids') ?? [];
-      final newActivities = activities.where((a) => !syncedIds.contains(a['fileKey'])).toList();
+      final newActivities = activities
+          .where((a) => !syncedIds.contains(a['fileKey']))
+          .toList();
 
       if (newActivities.isEmpty) {
         LogManager().addLog("OneLap Sync: No new activities.");
         return 0;
       }
 
-      LogManager().addLog("OneLap Sync: Found ${newActivities.length} new activities.");
+      LogManager().addLog(
+        "OneLap Sync: Found ${newActivities.length} new activities.",
+      );
 
       // 5. Download & Upload
-      final tempDir = await getTemporaryDirectory();
-      
-      // Initialize Strava Service if needed (it handles its own token refresh)
-      await _stravaService.init(); 
+      String dirPath = "";
+      if (!kIsWeb) {
+        final directory = await getTemporaryDirectory();
+        dirPath = "${directory.path}/";
+      }
 
       for (var activity in newActivities) {
         final fileKey = activity['fileKey'];
         final downloadUrl = activity['durl'];
-        
+
         try {
           LogManager().addLog("Downloading $fileKey...");
-          final savePath = '${tempDir.path}/$fileKey';
+          final savePath = '$dirPath$fileKey';
           final file = await _service.downloadFit(downloadUrl, savePath);
-          
+
           LogManager().addLog("Uploading $fileKey to Strava...");
-          await _stravaService.uploadFitFile(file);
-          
+          await _stravaService.uploadStravaFile(file, 'Default');
+
           // Mark as synced
           syncedIds.add(fileKey);
           await prefs.setStringList('onelap_synced_ids', syncedIds);
-          
+
           syncedCount++;
 
           // Cleanup
-          if (await file.exists()) await file.delete();
-          
+          if (!kIsWeb) {
+            if (await File(file.path).exists()) await File(file.path).delete();
+          }
         } catch (e) {
           LogManager().addLog("Failed to sync $fileKey: $e", isError: true);
         }
       }
 
       return syncedCount;
-
     } catch (e) {
       LogManager().addLog("OneLap Sync Error: $e", isError: true);
       rethrow;

@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'secrets.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path/path.dart' as p;
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 
 class StravaService {
   static const String _authUrl = 'https://www.strava.com/oauth/authorize';
@@ -10,19 +12,21 @@ class StravaService {
   static const String _uploadUrl = 'https://www.strava.com/api/v3/uploads';
   static const String _redirectUri = 'starvaauto://localhost';
 
-  // Using hardcoded credentials from secrets.dart
-  String get clientId => AppSecrets.clientId;
-  String get clientSecret => AppSecrets.clientSecret;
-  
+  String? clientId;
+  String? clientSecret;
+
   String? accessToken;
   String? refreshToken;
   int? expiresAt;
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    accessToken = prefs.getString('access_token');
-    refreshToken = prefs.getString('refresh_token');
-    expiresAt = prefs.getInt('expires_at');
+    final storage = const FlutterSecureStorage();
+    clientId = await storage.read(key: 'client_id');
+    clientSecret = await storage.read(key: 'client_secret');
+
+    accessToken = await storage.read(key: 'access_token');
+    refreshToken = await storage.read(key: 'refresh_token');
+    expiresAt = int.parse(await storage.read(key: 'expires_at') ?? '0');
   }
 
   // No longer need saveCredentials as we use secrets.dart
@@ -30,19 +34,28 @@ class StravaService {
   bool get isAuthenticated {
     if (accessToken == null || expiresAt == null) return false;
     // 如果过期了，认为还是“认证”过的，但在请求时会刷新
-    return true; 
+    return true;
   }
 
-  bool get hasCredentials => clientId != 'YOUR_CLIENT_ID' && clientSecret != 'YOUR_CLIENT_SECRET';
+  bool get hasCredentials => clientId != null && clientSecret != null;
 
   Uri getAuthorizationUrl() {
-    if (!hasCredentials) throw Exception('Client ID/Secret not configured in secrets.dart');
-    return Uri.parse(
-        '$_authUrl?client_id=$clientId&response_type=code&redirect_uri=$_redirectUri&approval_prompt=force&scope=activity:write');
+    if (!hasCredentials) {
+      throw Exception('Client ID/Secret not configured in secrets.dart');
+    }
+    if (kIsWeb) {
+      final String currentUri = getRedirectURI();
+      return Uri.parse(
+        '$_authUrl?client_id=$clientId&response_type=code&redirect_uri=$currentUri&approval_prompt=force&scope=activity:write',
+      );
+    } else {
+      return Uri.parse(
+        '$_authUrl?client_id=$clientId&response_type=code&redirect_uri=$_redirectUri&approval_prompt=force&scope=activity:write',
+      );
+    }
   }
 
-  Future<bool> handleAuthCallback(String url) async {
-    final uri = Uri.parse(url);
+  Future<bool> handleAuthCallback(Uri uri) async {
     if (uri.queryParameters.containsKey('error')) {
       throw Exception('Auth error: ${uri.queryParameters['error']}');
     }
@@ -54,12 +67,15 @@ class StravaService {
   }
 
   Future<bool> _exchangeToken(String code) async {
-    final response = await http.post(Uri.parse(_tokenUrl), body: {
-      'client_id': clientId,
-      'client_secret': clientSecret,
-      'code': code,
-      'grant_type': 'authorization_code',
-    });
+    final response = await http.post(
+      Uri.parse(_tokenUrl),
+      body: {
+        'client_id': clientId,
+        'client_secret': clientSecret,
+        'code': code,
+        'grant_type': 'authorization_code',
+      },
+    );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -72,19 +88,22 @@ class StravaService {
 
   Future<void> _refreshToken() async {
     if (refreshToken == null) throw Exception('No refresh token');
-    final response = await http.post(Uri.parse(_tokenUrl), body: {
-      'client_id': clientId,
-      'client_secret': clientSecret,
-      'refresh_token': refreshToken,
-      'grant_type': 'refresh_token',
-    });
+    final response = await http.post(
+      Uri.parse(_tokenUrl),
+      body: {
+        'client_id': clientId,
+        'client_secret': clientSecret,
+        'refresh_token': refreshToken,
+        'grant_type': 'refresh_token',
+      },
+    );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await _saveTokens(data);
     } else {
-       // Token refresh failed, maybe logout?
-       throw Exception('Failed to refresh token');
+      // Token refresh failed, maybe logout?
+      throw Exception('Failed to refresh token');
     }
   }
 
@@ -93,23 +112,45 @@ class StravaService {
     refreshToken = data['refresh_token'];
     expiresAt = data['expires_at'];
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('access_token', accessToken!);
-    await prefs.setString('refresh_token', refreshToken!);
-    await prefs.setInt('expires_at', expiresAt!);
+    final storage = const FlutterSecureStorage();
+    await storage.write(key: 'access_token', value: accessToken!);
+    await storage.write(key: 'refresh_token', value: refreshToken!);
+    await storage.write(key: 'expires_at', value: expiresAt!.toString());
+  }
+
+  Future<bool> saveCredentials(String clientId, String clientSecret) async {
+    final bool credentialsChanged =
+        (this.clientId != clientId || this.clientSecret != clientSecret);
+    if (this.clientId != null && credentialsChanged) {
+      logout();
+    }
+    this.clientId = clientId == "" ? null : clientId;
+    this.clientSecret = clientSecret == "" ? null : clientSecret;
+    final storage = const FlutterSecureStorage();
+    if (clientId != "") {
+      await storage.write(key: 'client_id', value: clientId);
+    } else {
+      await storage.delete(key: 'client_id');
+    }
+    if (clientSecret != "") {
+      await storage.write(key: 'client_secret', value: clientSecret);
+    } else {
+      await storage.delete(key: 'client_secret');
+    }
+    return credentialsChanged;
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
-    await prefs.remove('refresh_token');
-    await prefs.remove('expires_at');
+    final storage = const FlutterSecureStorage();
+    await storage.delete(key: 'access_token');
+    await storage.delete(key: 'refresh_token');
+    await storage.delete(key: 'expires_at');
     accessToken = null;
     refreshToken = null;
     expiresAt = null;
   }
 
-  Future<String> uploadFitFile(File file) async {
+  Future<String> uploadStravaFile(XFile file, String type) async {
     if (!isAuthenticated) throw Exception('Not authenticated');
 
     // Check expiration
@@ -119,16 +160,17 @@ class StravaService {
 
     var request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
     request.headers['Authorization'] = 'Bearer $accessToken';
-    
+
     // Read file bytes directly to avoid path permission issues
     final fileBytes = await file.readAsBytes();
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      fileBytes,
-      filename: file.path.split('/').last,
-    ));
-    
-    request.fields['data_type'] = 'fit';
+    request.files.add(
+      http.MultipartFile.fromBytes('file', fileBytes, filename: file.name),
+    );
+
+    request.fields['data_type'] = p.extension(file.name).substring(1);
+    if (type != 'Default') {
+      request.fields['sport_type'] = type;
+    }
 
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
@@ -142,7 +184,7 @@ class StravaService {
       if (data['error'] != null) {
         throw Exception('Upload failed: ${data['error']}');
       } else if (data['message'] != null) {
-         throw Exception('Upload failed: ${data['message']}');
+        throw Exception('Upload failed: ${data['message']}');
       }
       throw Exception('Upload failed with status ${response.statusCode}');
     }

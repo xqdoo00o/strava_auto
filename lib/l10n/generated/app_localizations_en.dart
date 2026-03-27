@@ -48,6 +48,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectLanguageTitle => 'Select Language';
 
   @override
+  String get coordCorrection => 'Coord Correction';
+
+  @override
+  String get coordCorrectionTip =>
+      'If coordinate offset occurs after uploading the file, enable pls.';
+
+  @override
   String get logoutConfirmationTitle => 'Disconnect?';
 
   @override
@@ -56,6 +63,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get confirmButton => 'Confirm';
+
+  @override
+  String get defaultStr => 'Default';
+
+  @override
+  String get run => 'Run';
+
+  @override
+  String get ride => 'Ride';
+
+  @override
+  String get stravaChangeTip =>
+      'Strava API changes: Please reconnect your Strava account.';
 
   @override
   String get privacyPolicyTitle => 'Privacy Policy';
@@ -221,7 +241,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploading => 'Uploading...';
 
   @override
-  String get tapToSelect => 'Tap to Select .FIT File';
+  String get tapToSelect => 'Tap to Select .FIT .GPX .TCX File';
 
   @override
   String get orShare => 'or share from other apps';

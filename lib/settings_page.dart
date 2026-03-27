@@ -3,156 +3,272 @@ import 'l10n/generated/app_localizations.dart';
 import 'log_manager.dart';
 import 'theme_manager.dart';
 import 'locale_manager.dart';
+import 'coord_manager.dart';
+import 'strava_setting.dart';
 import 'privacy_policy_page.dart';
 import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _shouldRefresh = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.settingsTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader(theme, AppLocalizations.of(context)!.generalSection),
-          AnimatedBuilder(
-            animation: ThemeManager(),
-            builder: (context, _) {
-              final themeMode = ThemeManager().themeMode;
-              String themeSubtitle = AppLocalizations.of(context)!.themeSystem;
-              if (themeMode == ThemeMode.light) themeSubtitle = AppLocalizations.of(context)!.themeLight;
-              if (themeMode == ThemeMode.dark) themeSubtitle = AppLocalizations.of(context)!.themeDark;
-              
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  leading: const Icon(Icons.palette_outlined, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.themeTitle),
-                  subtitle: Text(themeSubtitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showThemeDialog(context),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: LocaleManager(),
-            builder: (context, _) {
-              final locale = LocaleManager().locale;
-              String languageSubtitle = AppLocalizations.of(context)!.languageSystem;
-              if (locale?.languageCode == 'en') languageSubtitle = AppLocalizations.of(context)!.languageEn;
-              if (locale?.languageCode == 'zh') languageSubtitle = AppLocalizations.of(context)!.languageZh;
-              
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  leading: const Icon(Icons.language, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.languageTitle),
-                  subtitle: Text(languageSubtitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showLanguageDialog(context),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader(theme, AppLocalizations.of(context)!.experimentalSection),
-          AnimatedBuilder(
-            animation: Listenable.merge([OneLapManager(), LocaleManager()]),
-            builder: (context, _) {
-              final isConnected = OneLapManager().username != null;
-              final subtitle = isConnected 
-                  ? OneLapManager().username! 
-                  : AppLocalizations.of(context)!.oneLapSyncSubtitle;
 
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  leading: const Icon(Icons.sync_rounded, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.oneLapSyncTitle),
-                  subtitle: Text(subtitle),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isConnected) 
-                         const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                      if (isConnected)
-                         const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const OneLapLoginPage()),
-                    );
-                  },
-                ),
-              );
-            },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        Navigator.pop(context, _shouldRefresh);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(_shouldRefresh),
           ),
-          const SizedBox(height: 24),
-          _buildSectionHeader(theme, AppLocalizations.of(context)!.diagnosticsSection),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              leading: const Icon(Icons.history_rounded, color: Color(0xFFFC4C02)),
-              title: Text(AppLocalizations.of(context)!.activityLogsTitle),
-              subtitle: Text(AppLocalizations.of(context)!.activityLogsSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
+          title: Text(AppLocalizations.of(context)!.settingsTitle),
+          centerTitle: true,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildSectionHeader(
+              theme,
+              AppLocalizations.of(context)!.generalSection,
+            ),
+            AnimatedBuilder(
+              animation: ThemeManager(),
+              builder: (context, _) {
+                final themeMode = ThemeManager().themeMode;
+                String themeSubtitle = AppLocalizations.of(
                   context,
-                  MaterialPageRoute(builder: (context) => const ActivityLogPage()),
+                )!.themeSystem;
+                if (themeMode == ThemeMode.light) themeSubtitle = AppLocalizations.of(context)!.themeLight;
+                if (themeMode == ThemeMode.dark) themeSubtitle = AppLocalizations.of(context)!.themeDark;
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.palette_outlined,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(AppLocalizations.of(context)!.themeTitle),
+                    subtitle: Text(themeSubtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showThemeDialog(context),
+                  ),
                 );
               },
             ),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader(theme, AppLocalizations.of(context)!.aboutSection),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.privacyPolicyTitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage(isDialog: false)),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.info_outline, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.versionTitle),
-                  trailing: const Text("1.0.0"),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.code, color: Color(0xFFFC4C02)),
-                  title: Text(AppLocalizations.of(context)!.openSourceTitle),
-                  trailing: const Icon(Icons.open_in_new, size: 16),
-                  onTap: () {
-                    // Future: Open GitHub repo
-                  },
-                ),
-              ],
+            const SizedBox(height: 16),
+            AnimatedBuilder(
+              animation: LocaleManager(),
+              builder: (context, _) {
+                final locale = LocaleManager().locale;
+                String languageSubtitle = AppLocalizations.of(
+                  context,
+                )!.languageSystem;
+                if (locale?.languageCode == 'en') languageSubtitle = AppLocalizations.of(context)!.languageEn;
+                if (locale?.languageCode == 'zh') languageSubtitle = AppLocalizations.of(context)!.languageZh;
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.language,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(AppLocalizations.of(context)!.languageTitle),
+                    subtitle: Text(languageSubtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showLanguageDialog(context),
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(Icons.api, color: Color(0xFFFC4C02)),
+                title: Text("Strava API"),
+                subtitle: Text("Client ID/Secret"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final bool shouldDisconnect =
+                      await StravaConfigUtils.showStravaConfigDialog(context);
+                  if (shouldDisconnect) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppLocalizations.of(context)!.stravaChangeTip)),
+                    );
+                    setState(() {
+                      _shouldRefresh = true;
+                    });
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            AnimatedBuilder(
+              animation: CoordManager(),
+              builder: (context, _) {
+                final bool isEnabled =
+                    CoordManager().gcjCorrection == true;
+                final title = AppLocalizations.of(context)!.coordCorrection;
+                final subtitle = AppLocalizations.of(
+                  context,
+                )!.coordCorrectionTip;
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: SwitchListTile(
+                    secondary: Icon(
+                      isEnabled ? Icons.gps_fixed : Icons.gps_not_fixed,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(title),
+                    subtitle: Text(subtitle),
+                    value: isEnabled,
+                    onChanged: (bool value) {
+                      CoordManager().setGcjCorrection(value);
+                    },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader(
+              theme,
+              AppLocalizations.of(context)!.experimentalSection,
+            ),
+            AnimatedBuilder(
+              animation: Listenable.merge([OneLapManager(), LocaleManager()]),
+              builder: (context, _) {
+                final isConnected = OneLapManager().username != null;
+                final subtitle = isConnected
+                    ? OneLapManager().username!
+                    : AppLocalizations.of(context)!.oneLapSyncSubtitle;
+
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.sync_rounded,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(AppLocalizations.of(context)!.oneLapSyncTitle),
+                    subtitle: Text(subtitle),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isConnected)
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 16,
+                          ),
+                        if (isConnected) const SizedBox(width: 8),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OneLapLoginPage(),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader(
+              theme,
+              AppLocalizations.of(context)!.diagnosticsSection,
+            ),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFFFC4C02),
+                ),
+                title: Text(AppLocalizations.of(context)!.activityLogsTitle),
+                subtitle: Text(
+                  AppLocalizations.of(context)!.activityLogsSubtitle,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ActivityLogPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader(
+              theme,
+              AppLocalizations.of(context)!.aboutSection,
+            ),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.privacy_tip_outlined,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)!.privacyPolicyTitle,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PrivacyPolicyPage(isDialog: false),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.info_outline,
+                      color: Color(0xFFFC4C02),
+                    ),
+                    title: Text(AppLocalizations.of(context)!.versionTitle),
+                    trailing: const Text("1.0.0"),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.code, color: Color(0xFFFC4C02)),
+                    title: Text(AppLocalizations.of(context)!.openSourceTitle),
+                    trailing: const Icon(Icons.open_in_new, size: 16),
+                    onTap: () {
+                      // Future: Open GitHub repo
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -208,9 +324,21 @@ class _ThemeDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildOption(context, AppLocalizations.of(context)!.themeSystem, ThemeMode.system),
-            _buildOption(context, AppLocalizations.of(context)!.themeLight, ThemeMode.light),
-            _buildOption(context, AppLocalizations.of(context)!.themeDark, ThemeMode.dark),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.themeSystem,
+              ThemeMode.system,
+            ),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.themeLight,
+              ThemeMode.light,
+            ),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.themeDark,
+              ThemeMode.dark,
+            ),
           ],
         ),
       ),
@@ -248,9 +376,21 @@ class _LanguageDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildOption(context, AppLocalizations.of(context)!.languageSystem, null),
-            _buildOption(context, AppLocalizations.of(context)!.languageEn, const Locale('en')),
-            _buildOption(context, AppLocalizations.of(context)!.languageZh, const Locale('zh')),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.languageSystem,
+              null,
+            ),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.languageEn,
+              const Locale('en'),
+            ),
+            _buildOption(
+              context,
+              AppLocalizations.of(context)!.languageZh,
+              const Locale('zh'),
+            ),
           ],
         ),
       ),
@@ -297,17 +437,23 @@ class ActivityLogPage extends StatelessWidget {
         listenable: logManager,
         builder: (context, _) {
           final logs = logManager.logs;
-          
+
           if (logs.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history_toggle_off, size: 64, color: theme.disabledColor.withValues(alpha: 0.5)),
+                  Icon(
+                    Icons.history_toggle_off,
+                    size: 64,
+                    color: theme.disabledColor.withValues(alpha: 0.5),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     AppLocalizations.of(context)!.noLogsAvailable,
-                    style: theme.textTheme.titleMedium?.copyWith(color: theme.disabledColor),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.disabledColor,
+                    ),
                   ),
                 ],
               ),
@@ -325,12 +471,12 @@ class ActivityLogPage extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: log.isError 
-                        ? theme.colorScheme.error.withValues(alpha: 0.2) 
+                    color: log.isError
+                        ? theme.colorScheme.error.withValues(alpha: 0.2)
                         : theme.dividerColor.withValues(alpha: 0.5),
                   ),
                 ),
-                color: log.isError 
+                color: log.isError
                     ? theme.colorScheme.errorContainer.withValues(alpha: 0.2)
                     : theme.cardColor,
                 child: Padding(
@@ -341,9 +487,13 @@ class ActivityLogPage extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Icon(
-                          log.isError ? Icons.error_outline : Icons.check_circle_outline,
+                          log.isError
+                              ? Icons.error_outline
+                              : Icons.check_circle_outline,
                           size: 20,
-                          color: log.isError ? theme.colorScheme.error : Colors.green,
+                          color: log.isError
+                              ? theme.colorScheme.error
+                              : Colors.green,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -354,7 +504,9 @@ class ActivityLogPage extends StatelessWidget {
                             Text(
                               log.message,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: log.isError ? theme.colorScheme.error : theme.textTheme.bodyMedium?.color,
+                                color: log.isError
+                                    ? theme.colorScheme.error
+                                    : theme.textTheme.bodyMedium?.color,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -382,6 +534,6 @@ class ActivityLogPage extends StatelessWidget {
 
   String _formatTime(DateTime time) {
     return "${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} "
-           "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}";
+        "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}";
   }
 }
