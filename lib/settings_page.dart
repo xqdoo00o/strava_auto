@@ -52,10 +52,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 String themeSubtitle = AppLocalizations.of(
                   context,
                 )!.themeSystem;
-                if (themeMode == ThemeMode.light)
+                if (themeMode == ThemeMode.light) {
                   themeSubtitle = AppLocalizations.of(context)!.themeLight;
-                if (themeMode == ThemeMode.dark)
+                }
+                if (themeMode == ThemeMode.dark) {
                   themeSubtitle = AppLocalizations.of(context)!.themeDark;
+                }
                 return Card(
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
@@ -79,10 +81,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 String languageSubtitle = AppLocalizations.of(
                   context,
                 )!.languageSystem;
-                if (locale?.languageCode == 'en')
+                if (locale?.languageCode == 'en') {
                   languageSubtitle = AppLocalizations.of(context)!.languageEn;
-                if (locale?.languageCode == 'zh')
+                }
+                if (locale?.languageCode == 'zh') {
                   languageSubtitle = AppLocalizations.of(context)!.languageZh;
+                }
                 return Card(
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(

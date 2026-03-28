@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'onelap_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class OneLapLoginPage extends StatefulWidget {
@@ -69,7 +70,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
   }
 
   Future<void> _requestBatteryOptimization() async {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       final status = await Permission.ignoreBatteryOptimizations.status;
       if (!status.isGranted) {
         await Permission.ignoreBatteryOptimizations.request();

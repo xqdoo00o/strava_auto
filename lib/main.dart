@@ -510,127 +510,134 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-      // 2. 使用 StatefulBuilder 来管理弹窗内部状态
-      builder: (context, setModalState) {
-        final theme = Theme.of(context);
-        return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.uploadActivityTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(12),
+        // 2. 使用 StatefulBuilder 来管理弹窗内部状态
+        builder: (context, setModalState) {
+          final theme = Theme.of(context);
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.fitness_center, color: Color(0xFFFC4C02)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      file.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.uploadActivityTitle,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // --- 3. 插入 SegmentedButton ---
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  // visualDensity: VisualDensity(horizontal: 1, vertical: 1),
-                  shape: RoundedRectangleBorder(
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.fitness_center,
+                        color: Color(0xFFFC4C02),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          file.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                segments: [
-                  ButtonSegment(
-                    value: 'Default',
-                    label: Text(AppLocalizations.of(context)!.defaultStr),
-                    icon: const Icon(Icons.star_border),
-                  ),
-                  ButtonSegment(
-                    value: 'Run',
-                    label: Text(AppLocalizations.of(context)!.run),
-                    icon: const Icon(Icons.directions_run_rounded),
-                  ),
-                  ButtonSegment(
-                    value: 'Ride',
-                    label: Text(AppLocalizations.of(context)!.ride),
-                    icon: const Icon(Icons.directions_bike_rounded),
-                  ),
-                ],
-                selected: {tempSportType},
-                onSelectionChanged: (newSelection) {
-                  // 使用 setModalState 刷新底部弹窗的 UI
-                  setModalState(() {
-                    tempSportType = newSelection.first;
-                  });
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                const SizedBox(height: 20),
+                // --- 3. 插入 SegmentedButton ---
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      // visualDensity: VisualDensity(horizontal: 1, vertical: 1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(AppLocalizations.of(context)!.cancelButton),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog first
-                      _uploadFile(file, tempSportType);
+                    segments: [
+                      ButtonSegment(
+                        value: 'Default',
+                        label: Text(AppLocalizations.of(context)!.defaultStr),
+                        icon: const Icon(Icons.star_border),
+                      ),
+                      ButtonSegment(
+                        value: 'Run',
+                        label: Text(AppLocalizations.of(context)!.run),
+                        icon: const Icon(Icons.directions_run_rounded),
+                      ),
+                      ButtonSegment(
+                        value: 'Ride',
+                        label: Text(AppLocalizations.of(context)!.ride),
+                        icon: const Icon(Icons.directions_bike_rounded),
+                      ),
+                    ],
+                    selected: {tempSportType},
+                    onSelectionChanged: (newSelection) {
+                      // 使用 setModalState 刷新底部弹窗的 UI
+                      setModalState(() {
+                        tempSportType = newSelection.first;
+                      });
                     },
-                    child: Text(AppLocalizations.of(context)!.uploadNowButton),
                   ),
                 ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(AppLocalizations.of(context)!.cancelButton),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close dialog first
+                          _uploadFile(file, tempSportType);
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)!.uploadNowButton,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
               ],
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      );
-      }
+          );
+        },
       ),
     );
   }
@@ -639,7 +646,7 @@ class _DashboardPageState extends State<DashboardPage>
     XFile uploadFile = file;
 
     //iOS Sandboxing Fix: Copy file to app's temp directory
-    if (Platform.isIOS) {
+    if (!kIsWeb && Platform.isIOS) {
       try {
         final tempDir = await getTemporaryDirectory();
         final newPath = '${tempDir.path}/${file.name}';
@@ -650,9 +657,13 @@ class _DashboardPageState extends State<DashboardPage>
       } catch (e) {
         _addLog("Failed to copy file: $e", isError: true);
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text(AppLocalizations.of(context)!.cannotAccessFile(file.path))),
-           );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.cannotAccessFile(file.path),
+              ),
+            ),
+          );
         }
         return;
       }
