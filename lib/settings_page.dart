@@ -5,9 +5,9 @@ import 'theme_manager.dart';
 import 'locale_manager.dart';
 import 'coord_manager.dart';
 import 'strava_setting.dart';
-import 'privacy_policy_page.dart';
 import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -52,8 +52,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 String themeSubtitle = AppLocalizations.of(
                   context,
                 )!.themeSystem;
-                if (themeMode == ThemeMode.light) themeSubtitle = AppLocalizations.of(context)!.themeLight;
-                if (themeMode == ThemeMode.dark) themeSubtitle = AppLocalizations.of(context)!.themeDark;
+                if (themeMode == ThemeMode.light)
+                  themeSubtitle = AppLocalizations.of(context)!.themeLight;
+                if (themeMode == ThemeMode.dark)
+                  themeSubtitle = AppLocalizations.of(context)!.themeDark;
                 return Card(
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
@@ -77,8 +79,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 String languageSubtitle = AppLocalizations.of(
                   context,
                 )!.languageSystem;
-                if (locale?.languageCode == 'en') languageSubtitle = AppLocalizations.of(context)!.languageEn;
-                if (locale?.languageCode == 'zh') languageSubtitle = AppLocalizations.of(context)!.languageZh;
+                if (locale?.languageCode == 'en')
+                  languageSubtitle = AppLocalizations.of(context)!.languageEn;
+                if (locale?.languageCode == 'zh')
+                  languageSubtitle = AppLocalizations.of(context)!.languageZh;
                 return Card(
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
@@ -108,7 +112,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (shouldDisconnect) {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.stravaChangeTip)),
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!.stravaChangeTip,
+                        ),
+                      ),
                     );
                     setState(() {
                       _shouldRefresh = true;
@@ -121,8 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
             AnimatedBuilder(
               animation: CoordManager(),
               builder: (context, _) {
-                final bool isEnabled =
-                    CoordManager().gcjCorrection == true;
+                final bool isEnabled = CoordManager().gcjCorrection == true;
                 final title = AppLocalizations.of(context)!.coordCorrection;
                 final subtitle = AppLocalizations.of(
                   context,
@@ -229,26 +236,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   ListTile(
                     leading: const Icon(
-                      Icons.privacy_tip_outlined,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(
-                      AppLocalizations.of(context)!.privacyPolicyTitle,
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const PrivacyPolicyPage(isDialog: false),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
                       Icons.info_outline,
                       color: Color(0xFFFC4C02),
                     ),
@@ -261,7 +248,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: Text(AppLocalizations.of(context)!.openSourceTitle),
                     trailing: const Icon(Icons.open_in_new, size: 16),
                     onTap: () {
-                      // Future: Open GitHub repo
+                      launchUrl(
+                        Uri.parse("https://github.com/xqdoo00o/starva_auto"),
+                        mode: LaunchMode.externalApplication,
+                      );
                     },
                   ),
                 ],

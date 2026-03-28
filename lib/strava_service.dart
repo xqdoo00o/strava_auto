@@ -11,7 +11,7 @@ class StravaService {
   static const String _tokenUrl = 'https://www.strava.com/oauth/token';
   static const String _uploadUrl = 'https://www.strava.com/api/v3/uploads';
   static const String _redirectUri = 'starvaauto://localhost';
-
+  final storage = const FlutterSecureStorage();
   String? clientId;
   String? clientSecret;
 
@@ -20,7 +20,6 @@ class StravaService {
   int? expiresAt;
 
   Future<void> init() async {
-    final storage = const FlutterSecureStorage();
     clientId = await storage.read(key: 'client_id');
     clientSecret = await storage.read(key: 'client_secret');
 
@@ -112,7 +111,6 @@ class StravaService {
     refreshToken = data['refresh_token'];
     expiresAt = data['expires_at'];
 
-    final storage = const FlutterSecureStorage();
     await storage.write(key: 'access_token', value: accessToken!);
     await storage.write(key: 'refresh_token', value: refreshToken!);
     await storage.write(key: 'expires_at', value: expiresAt!.toString());
@@ -126,7 +124,6 @@ class StravaService {
     }
     this.clientId = clientId == "" ? null : clientId;
     this.clientSecret = clientSecret == "" ? null : clientSecret;
-    final storage = const FlutterSecureStorage();
     if (clientId != "") {
       await storage.write(key: 'client_id', value: clientId);
     } else {
@@ -141,7 +138,6 @@ class StravaService {
   }
 
   Future<void> logout() async {
-    final storage = const FlutterSecureStorage();
     await storage.delete(key: 'access_token');
     await storage.delete(key: 'refresh_token');
     await storage.delete(key: 'expires_at');

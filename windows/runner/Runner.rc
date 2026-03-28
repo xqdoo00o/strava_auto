@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "ltd.mijiu" "\0"
-            VALUE "FileDescription", "小四爪" "\0"
+            VALUE "CompanyName", "com.upstrava" "\0"
+            VALUE "FileDescription", "Strava Auto" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "小四爪" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 ltd.mijiu. All rights reserved." "\0"
+            VALUE "InternalName", "Strava Auto" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.upstrava. All rights reserved." "\0"
             VALUE "OriginalFilename", "starva_auto.exe" "\0"
-            VALUE "ProductName", "小四爪" "\0"
+            VALUE "ProductName", "Strava Auto" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

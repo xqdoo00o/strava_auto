@@ -9,7 +9,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
@@ -23,7 +22,6 @@ import 'strava_setting.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
-import 'privacy_policy_page.dart';
 import 'background_service.dart';
 
 import 'package:get_it/get_it.dart';
@@ -52,7 +50,7 @@ class UpstraApp extends StatelessWidget {
       ]),
       builder: (context, child) {
         return MaterialApp(
-          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          onGenerateTitle: (context) => "Strava Auto",
           locale: LocaleManager().locale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -263,23 +261,6 @@ class _DashboardPageState extends State<DashboardPage>
     _initStrava();
     _initDeepLinks();
     if (!kIsWeb) _initSharingIntent();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkPrivacyPolicy();
-    });
-  }
-
-  Future<void> _checkPrivacyPolicy() async {
-    final prefs = await SharedPreferences.getInstance();
-    final agreed = prefs.getBool('privacy_agreed') ?? false;
-    if (!agreed && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        useSafeArea: false,
-        builder: (context) => const PrivacyPolicyPage(isDialog: true),
-      );
-    }
   }
 
   @override

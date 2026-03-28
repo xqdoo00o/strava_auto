@@ -9,9 +9,6 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '小四爪';
-
-  @override
   String get settingsTitle => '设置';
 
   @override

@@ -1,6 +1,6 @@
 {
-    "name": "小四爪",
-    "short_name": "小四爪",
+    "name": "Strava Auto",
+    "short_name": "Strava Auto",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hex_code",

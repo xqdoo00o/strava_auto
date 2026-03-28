@@ -98,12 +98,6 @@ abstract class AppLocalizations {
     Locale('zh'),
   ];
 
-  /// No description provided for @appTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Starva Auto'**
-  String get appTitle;
-
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:

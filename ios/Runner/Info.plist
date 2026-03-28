@@ -6,7 +6,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>ltd.mijiu.upstra</string>
+			<string>com.upstrava</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>starvaauto</string>
@@ -68,7 +68,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>小四爪</string>
+	<string>Strava Auto</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
