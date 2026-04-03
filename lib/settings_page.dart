@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'l10n/generated/app_localizations.dart';
 import 'log_manager.dart';
 import 'theme_manager.dart';
 import 'locale_manager.dart';
@@ -7,262 +5,293 @@ import 'coord_manager.dart';
 import 'strava_setting.dart';
 import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
+import 'keep_login_page.dart';
+import 'keep_manager.dart';
+import 'app_state.dart';
+import 'extension.dart';
+import 'package:flutter/material.dart';
+import 'l10n/generated/app_localizations.dart';
+import 'package:get_it/get_it.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
-
-  @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
-  bool _shouldRefresh = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) return;
-        Navigator.pop(context, _shouldRefresh);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(_shouldRefresh),
+    final AppState appState = GetIt.I<AppState>();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.settingsTitle),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildSectionHeader(
+            theme,
+            AppLocalizations.of(context)!.generalSection,
           ),
-          title: Text(AppLocalizations.of(context)!.settingsTitle),
-          centerTitle: true,
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildSectionHeader(
-              theme,
-              AppLocalizations.of(context)!.generalSection,
-            ),
-            AnimatedBuilder(
-              animation: ThemeManager(),
-              builder: (context, _) {
-                final themeMode = ThemeManager().themeMode;
-                String themeSubtitle = AppLocalizations.of(
-                  context,
-                )!.themeSystem;
-                if (themeMode == ThemeMode.light) {
-                  themeSubtitle = AppLocalizations.of(context)!.themeLight;
-                }
-                if (themeMode == ThemeMode.dark) {
-                  themeSubtitle = AppLocalizations.of(context)!.themeDark;
-                }
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.palette_outlined,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(AppLocalizations.of(context)!.themeTitle),
-                    subtitle: Text(themeSubtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showThemeDialog(context),
+          AnimatedBuilder(
+            animation: ThemeManager(),
+            builder: (context, _) {
+              final themeMode = ThemeManager().themeMode;
+              String themeSubtitle = AppLocalizations.of(context)!.themeSystem;
+              if (themeMode == ThemeMode.light) {
+                themeSubtitle = AppLocalizations.of(context)!.themeLight;
+              }
+              if (themeMode == ThemeMode.dark) {
+                themeSubtitle = AppLocalizations.of(context)!.themeDark;
+              }
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.palette_outlined,
+                    color: Color(0xFFFC4C02),
                   ),
-                );
+                  title: Text(AppLocalizations.of(context)!.themeTitle),
+                  subtitle: Text(themeSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showThemeDialog(context),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: LocaleManager(),
+            builder: (context, _) {
+              final locale = LocaleManager().locale;
+              String languageSubtitle = AppLocalizations.of(
+                context,
+              )!.languageSystem;
+              if (locale?.languageCode == 'en') {
+                languageSubtitle = AppLocalizations.of(context)!.languageEn;
+              }
+              if (locale?.languageCode == 'zh') {
+                languageSubtitle = AppLocalizations.of(context)!.languageZh;
+              }
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(Icons.language, color: Color(0xFFFC4C02)),
+                  title: Text(AppLocalizations.of(context)!.languageTitle),
+                  subtitle: Text(languageSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showLanguageDialog(context),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: const Icon(Icons.api, color: Color(0xFFFC4C02)),
+              title: Text("Strava API"),
+              subtitle: Text("Client ID/Secret"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final bool shouldDisconnect =
+                    await StravaConfigUtils.showStravaConfigDialog(context);
+                if (shouldDisconnect) {
+                  if (!context.mounted) return;
+                  context.showToast(AppLocalizations.of(context)!.stravaChangeTip);
+                  appState.setConnected(false);
+                }
               },
             ),
-            const SizedBox(height: 16),
-            AnimatedBuilder(
-              animation: LocaleManager(),
-              builder: (context, _) {
-                final locale = LocaleManager().locale;
-                String languageSubtitle = AppLocalizations.of(
-                  context,
-                )!.languageSystem;
-                if (locale?.languageCode == 'en') {
-                  languageSubtitle = AppLocalizations.of(context)!.languageEn;
-                }
-                if (locale?.languageCode == 'zh') {
-                  languageSubtitle = AppLocalizations.of(context)!.languageZh;
-                }
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.language,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(AppLocalizations.of(context)!.languageTitle),
-                    subtitle: Text(languageSubtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showLanguageDialog(context),
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: CoordManager(),
+            builder: (context, _) {
+              final bool isEnabled = CoordManager().gcjCorrection == true;
+              final title = AppLocalizations.of(context)!.coordCorrection;
+              final subtitle = AppLocalizations.of(context)!.coordCorrectionTip;
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: SwitchListTile(
+                  secondary: Icon(
+                    isEnabled ? Icons.gps_fixed : Icons.gps_not_fixed,
+                    color: Color(0xFFFC4C02),
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: const Icon(Icons.api, color: Color(0xFFFC4C02)),
-                title: Text("Strava API"),
-                subtitle: Text("Client ID/Secret"),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () async {
-                  final bool shouldDisconnect =
-                      await StravaConfigUtils.showStravaConfigDialog(context);
-                  if (shouldDisconnect) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!.stravaChangeTip,
+                  title: Text(title),
+                  subtitle: Text(subtitle),
+                  value: isEnabled,
+                  onChanged: (bool value) {
+                    CoordManager().setGcjCorrection(value);
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+            theme,
+            AppLocalizations.of(context)!.experimentalSection,
+          ),
+          AnimatedBuilder(
+            animation: Listenable.merge([OneLapManager(), LocaleManager()]),
+            builder: (context, _) {
+              final isConnected = OneLapManager().username != null;
+              final subtitle = isConnected
+                  ? OneLapManager().username!
+                  : AppLocalizations.of(context)!.thirdSyncSubtitle(
+                      AppLocalizations.of(context)!.oneLap,
+                      AppLocalizations.of(context)!.ride,
+                    );
+
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.sync_rounded,
+                    color: Color(0xFFFC4C02),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!.thirdSyncTitle(AppLocalizations.of(context)!.oneLap),
+                  ),
+                  subtitle: Text(subtitle),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isConnected)
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
                         ),
+                      if (isConnected) const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const OneLapLoginPage(),
                       ),
                     );
-                    setState(() {
-                      _shouldRefresh = true;
-                    });
-                  }
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            AnimatedBuilder(
-              animation: CoordManager(),
-              builder: (context, _) {
-                final bool isEnabled = CoordManager().gcjCorrection == true;
-                final title = AppLocalizations.of(context)!.coordCorrection;
-                final subtitle = AppLocalizations.of(
-                  context,
-                )!.coordCorrectionTip;
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: SwitchListTile(
-                    secondary: Icon(
-                      isEnabled ? Icons.gps_fixed : Icons.gps_not_fixed,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(title),
-                    subtitle: Text(subtitle),
-                    value: isEnabled,
-                    onChanged: (bool value) {
-                      CoordManager().setGcjCorrection(value);
-                    },
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(
-              theme,
-              AppLocalizations.of(context)!.experimentalSection,
-            ),
-            AnimatedBuilder(
-              animation: Listenable.merge([OneLapManager(), LocaleManager()]),
-              builder: (context, _) {
-                final isConnected = OneLapManager().username != null;
-                final subtitle = isConnected
-                    ? OneLapManager().username!
-                    : AppLocalizations.of(context)!.oneLapSyncSubtitle;
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: Listenable.merge([KeepManager(), LocaleManager()]),
+            builder: (context, _) {
+              final isConnected = KeepManager().username != null;
+              final subtitle = isConnected
+                  ? KeepManager().username!
+                  : AppLocalizations.of(context)!.thirdSyncSubtitle(
+                      AppLocalizations.of(context)!.keep,
+                      AppLocalizations.of(context)!.run,
+                    );
 
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.sync_rounded,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(AppLocalizations.of(context)!.oneLapSyncTitle),
-                    subtitle: Text(subtitle),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isConnected)
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 16,
-                          ),
-                        if (isConnected) const SizedBox(width: 8),
-                        const Icon(Icons.chevron_right),
-                      ],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const OneLapLoginPage(),
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.sync_rounded,
+                    color: Color(0xFFFC4C02),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!.thirdSyncTitle(AppLocalizations.of(context)!.keep),
+                  ),
+                  subtitle: Text(subtitle),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isConnected)
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
                         ),
-                      );
-                    },
+                      if (isConnected) const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const KeepLoginPage(),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+            theme,
+            AppLocalizations.of(context)!.diagnosticsSection,
+          ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: const Icon(
+                Icons.history_rounded,
+                color: Color(0xFFFC4C02),
+              ),
+              title: Text(AppLocalizations.of(context)!.activityLogsTitle),
+              subtitle: Text(
+                AppLocalizations.of(context)!.activityLogsSubtitle,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ActivityLogPage(),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(
-              theme,
-              AppLocalizations.of(context)!.diagnosticsSection,
-            ),
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.history_rounded,
-                  color: Color(0xFFFC4C02),
-                ),
-                title: Text(AppLocalizations.of(context)!.activityLogsTitle),
-                subtitle: Text(
-                  AppLocalizations.of(context)!.activityLogsSubtitle,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ActivityLogPage(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(
-              theme,
-              AppLocalizations.of(context)!.aboutSection,
-            ),
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(
-                      Icons.info_outline,
-                      color: Color(0xFFFC4C02),
-                    ),
-                    title: Text(AppLocalizations.of(context)!.versionTitle),
-                    trailing: const Text("1.0.0"),
+          ),
+          const SizedBox(height: 24),
+          _buildSectionHeader(
+            theme,
+            AppLocalizations.of(context)!.aboutSection,
+          ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.info_outline,
+                    color: Color(0xFFFC4C02),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.code, color: Color(0xFFFC4C02)),
-                    title: Text(AppLocalizations.of(context)!.openSourceTitle),
-                    trailing: const Icon(Icons.open_in_new, size: 16),
-                    onTap: () {
-                      launchUrl(
-                        Uri.parse("https://github.com/xqdoo00o/starva_auto"),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                  ),
-                ],
-              ),
+                  title: Text(AppLocalizations.of(context)!.versionTitle),
+                  trailing: const Text("1.0.0"),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.code, color: Color(0xFFFC4C02)),
+                  title: Text(AppLocalizations.of(context)!.openSourceTitle),
+                  trailing: const Icon(Icons.open_in_new, size: 16),
+                  onTap: () {
+                    launchUrl(
+                      Uri.parse("https://github.com/xqdoo00o/starva_auto"),
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

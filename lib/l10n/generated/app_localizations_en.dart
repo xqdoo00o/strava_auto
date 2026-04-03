@@ -90,21 +90,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get experimentalSection => 'Experimental Features';
 
   @override
-  String get oneLapSyncTitle => 'OneLap Auto Sync';
+  String get oneLap => 'OneLap';
 
   @override
-  String get oneLapSyncSubtitle => 'Sync OneLap activities to Strava';
+  String get keep => 'Keep';
+
+  @override
+  String thirdSyncTitle(Object aThirdName) {
+    return '$aThirdName Auto Sync';
+  }
+
+  @override
+  String thirdSyncSubtitle(Object aThirdName, Object sportName) {
+    return 'Sync $aThirdName $sportName activities to Strava';
+  }
 
   @override
   String get backgroundSyncTip =>
       'Note: Background sync relies on system scheduling.\n• iOS: Sync stops if you force-close the app. Re-open to activate.\n• Android: Please allow \'Autostart\' and disable \'Battery Optimization\' for reliable sync.';
 
   @override
-  String get oneLapLoginTitle => 'Connect OneLap';
+  String thirdLoginTitle(Object aThirdName) {
+    return 'Connect $aThirdName';
+  }
 
   @override
-  String get oneLapLoginDescription =>
-      'Connect your OneLap account to automatically sync activities to Strava.';
+  String thirdLoginDescription(Object aThirdName, Object sportName) {
+    return 'Connect your $aThirdName account to automatically sync $sportName activities to Strava.';
+  }
+
+  @override
+  String get phoneLabel => 'Phone';
 
   @override
   String get accountLabel => 'Account / Phone';
@@ -113,7 +129,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordLabel => 'Password';
 
   @override
-  String get connectSyncButton => 'Connect & Sync';
+  String get connectSyncButton => 'Connect';
 
   @override
   String get reconnectButton => 'Reconnect';
@@ -122,7 +138,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get disconnectAccountButton => 'Disconnect Account';
 
   @override
-  String get loginSuccess => 'Connected to OneLap successfully!';
+  String loginSuccess(Object aThirdName) {
+    return 'Connected to $aThirdName successfully!';
+  }
 
   @override
   String get loginFailed => 'Login failed. Please check your credentials.';

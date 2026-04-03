@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:path/path.dart' as p;
+import 'package:archive/archive.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 
 class StravaService {
@@ -27,8 +27,6 @@ class StravaService {
     refreshToken = await storage.read(key: 'refresh_token');
     expiresAt = int.parse(await storage.read(key: 'expires_at') ?? '0');
   }
-
-  // No longer need saveCredentials as we use secrets.dart
 
   bool get isAuthenticated {
     if (accessToken == null || expiresAt == null) return false;
@@ -146,7 +144,7 @@ class StravaService {
     expiresAt = null;
   }
 
-  Future<String> uploadStravaFile(XFile file, String type) async {
+  Future<String> uploadStravaFile(XFile file, String sportType) async {
     if (!isAuthenticated) throw Exception('Not authenticated');
 
     // Check expiration
@@ -157,15 +155,19 @@ class StravaService {
     var request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
     request.headers['Authorization'] = 'Bearer $accessToken';
 
-    // Read file bytes directly to avoid path permission issues
     final fileBytes = await file.readAsBytes();
+    final compressedBytes = GZipEncoder().encodeBytes(fileBytes);
+    final index = file.name.lastIndexOf('.');
+    var ext = file.name.substring(index + 1).toLowerCase();
+    final fileName = '${file.name.substring(0, index)}.$ext';
+    ext = '$ext.gz';
     request.files.add(
-      http.MultipartFile.fromBytes('file', fileBytes, filename: file.name),
+      http.MultipartFile.fromBytes('file', compressedBytes, filename: fileName),
     );
 
-    request.fields['data_type'] = p.extension(file.name).substring(1);
-    if (type != 'Default') {
-      request.fields['sport_type'] = type;
+    request.fields['data_type'] = ext;
+    if (sportType != 'Default') {
+      request.fields['sport_type'] = sportType;
     }
 
     var streamedResponse = await request.send();

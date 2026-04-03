@@ -2,18 +2,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'extension.dart';
-import 'onelap_manager.dart';
+import 'keep_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'l10n/generated/app_localizations.dart';
 
-class OneLapLoginPage extends StatefulWidget {
-  const OneLapLoginPage({super.key});
+class KeepLoginPage extends StatefulWidget {
+  const KeepLoginPage({super.key});
 
   @override
-  State<OneLapLoginPage> createState() => _OneLapLoginPageState();
+  State<KeepLoginPage> createState() => _KeepLoginPageState();
 }
 
-class _OneLapLoginPageState extends State<OneLapLoginPage> {
+class _KeepLoginPageState extends State<KeepLoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,11 +27,11 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
   }
 
   Future<void> _loadCredentials() async {
-    await OneLapManager().init();
+    await KeepManager().init();
     if (mounted) {
       setState(() {
-        if (OneLapManager().username != null) {
-          _usernameController.text = OneLapManager().username!;
+        if (KeepManager().username != null) {
+          _usernameController.text = KeepManager().username!;
         }
       });
     }
@@ -45,7 +45,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
       _errorMessage = null;
     });
 
-    final success = await OneLapManager().login(
+    final success = await KeepManager().login(
       _usernameController.text,
       _passwordController.text,
     );
@@ -60,7 +60,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
           context.showToast(
             AppLocalizations.of(
               context,
-            )!.loginSuccess(AppLocalizations.of(context)!.loginSuccess),
+            )!.loginSuccess(AppLocalizations.of(context)!.keep),
           );
 
           // Request battery optimization permission on Android after successful login
@@ -90,7 +90,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
     context.showToast(l10n.syncingMessage);
 
     try {
-      final syncedCount = await OneLapManager().syncNow();
+      final syncedCount = await KeepManager().syncNow();
       if (mounted) {
         context.showToast(l10n.syncSuccessMessage(syncedCount));
       }
@@ -116,7 +116,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.thirdLoginTitle(l10n.oneLap))),
+      appBar: AppBar(title: Text(l10n.thirdLoginTitle(l10n.keep))),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -125,14 +125,14 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                l10n.thirdLoginDescription(l10n.oneLap, l10n.ride),
+                l10n.thirdLoginDescription(l10n.keep, l10n.run),
                 style: TextStyle(fontSize: 16, color: theme.hintColor),
               ),
               const SizedBox(height: 32),
               TextFormField(
                 controller: _usernameController,
                 decoration: InputDecoration(
-                  labelText: l10n.accountLabel,
+                  labelText: l10n.phoneLabel,
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
@@ -179,13 +179,13 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
-                        OneLapManager().username != null
+                        KeepManager().username != null
                             ? l10n.reconnectButton
                             : l10n.connectSyncButton,
                       ),
               ),
               const SizedBox(height: 16),
-              if (OneLapManager().username != null) ...[
+              if (KeepManager().username != null) ...[
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleSyncNow,
                   style: ElevatedButton.styleFrom(
@@ -214,7 +214,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () async {
-                    await OneLapManager().logout();
+                    await KeepManager().logout();
                     setState(() {
                       _usernameController.clear();
                       _passwordController.clear();

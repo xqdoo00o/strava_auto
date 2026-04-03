@@ -254,17 +254,29 @@ abstract class AppLocalizations {
   /// **'Experimental Features'**
   String get experimentalSection;
 
-  /// No description provided for @oneLapSyncTitle.
+  /// No description provided for @oneLap.
   ///
   /// In en, this message translates to:
-  /// **'OneLap Auto Sync'**
-  String get oneLapSyncTitle;
+  /// **'OneLap'**
+  String get oneLap;
 
-  /// No description provided for @oneLapSyncSubtitle.
+  /// No description provided for @keep.
   ///
   /// In en, this message translates to:
-  /// **'Sync OneLap activities to Strava'**
-  String get oneLapSyncSubtitle;
+  /// **'Keep'**
+  String get keep;
+
+  /// No description provided for @thirdSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{aThirdName} Auto Sync'**
+  String thirdSyncTitle(Object aThirdName);
+
+  /// No description provided for @thirdSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync {aThirdName} {sportName} activities to Strava'**
+  String thirdSyncSubtitle(Object aThirdName, Object sportName);
 
   /// No description provided for @backgroundSyncTip.
   ///
@@ -272,17 +284,23 @@ abstract class AppLocalizations {
   /// **'Note: Background sync relies on system scheduling.\n• iOS: Sync stops if you force-close the app. Re-open to activate.\n• Android: Please allow \'Autostart\' and disable \'Battery Optimization\' for reliable sync.'**
   String get backgroundSyncTip;
 
-  /// No description provided for @oneLapLoginTitle.
+  /// No description provided for @thirdLoginTitle.
   ///
   /// In en, this message translates to:
-  /// **'Connect OneLap'**
-  String get oneLapLoginTitle;
+  /// **'Connect {aThirdName}'**
+  String thirdLoginTitle(Object aThirdName);
 
-  /// No description provided for @oneLapLoginDescription.
+  /// No description provided for @thirdLoginDescription.
   ///
   /// In en, this message translates to:
-  /// **'Connect your OneLap account to automatically sync activities to Strava.'**
-  String get oneLapLoginDescription;
+  /// **'Connect your {aThirdName} account to automatically sync {sportName} activities to Strava.'**
+  String thirdLoginDescription(Object aThirdName, Object sportName);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phoneLabel;
 
   /// No description provided for @accountLabel.
   ///
@@ -299,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectSyncButton.
   ///
   /// In en, this message translates to:
-  /// **'Connect & Sync'**
+  /// **'Connect'**
   String get connectSyncButton;
 
   /// No description provided for @reconnectButton.
@@ -317,8 +335,8 @@ abstract class AppLocalizations {
   /// No description provided for @loginSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Connected to OneLap successfully!'**
-  String get loginSuccess;
+  /// **'Connected to {aThirdName} successfully!'**
+  String loginSuccess(Object aThirdName);
 
   /// No description provided for @loginFailed.
   ///

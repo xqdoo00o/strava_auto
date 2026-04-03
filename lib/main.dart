@@ -8,22 +8,22 @@ import 'package:app_links/app_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/generated/app_localizations.dart';
 import 'theme_manager.dart';
 import 'locale_manager.dart';
 import 'coord_manager.dart';
 import 'coord_fixer.dart';
 import 'strava_setting.dart';
+import 'background_service.dart';
+import 'app_state.dart';
+import 'extension.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
-import 'background_service.dart';
-
 import 'package:get_it/get_it.dart';
 
 final getIt = GetIt.instance;
@@ -32,7 +32,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) BackgroundService.initialize();
   final stravaService = StravaService();
-  await stravaService.init(); // 等待从存储中读取数据
+  await stravaService.init();
+  getIt.registerSingleton<AppState>(AppState());
   getIt.registerSingleton<StravaService>(stravaService);
   runApp(const UpstraApp());
 }
@@ -235,12 +236,11 @@ class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   final StravaService _stravaService = GetIt.I<StravaService>();
   final _appLinks = AppLinks();
-
   StreamSubscription<Uri>? _sub;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
 
   // State
-  bool _isConnected = false;
+  final AppState _appState = GetIt.I<AppState>();
   bool _isUploading = false;
 
   late AnimationController _pulseController;
@@ -257,7 +257,7 @@ class _DashboardPageState extends State<DashboardPage>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
+    _appState.addListener(_handleStateChange);
     _initStrava();
     _initDeepLinks();
     if (!kIsWeb) _initSharingIntent();
@@ -268,7 +268,14 @@ class _DashboardPageState extends State<DashboardPage>
     _sub?.cancel();
     _intentSub?.cancel();
     _pulseController.dispose();
+    _appState.removeListener(_handleStateChange);
     super.dispose();
+  }
+
+  void _handleStateChange() {
+    if (!_appState.isConnected) {
+      _disconnect();
+    }
   }
 
   void _addLog(String message, {bool isError = false}) {
@@ -279,10 +286,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _initStrava() async {
     try {
-      setState(() {
-        _isConnected = _stravaService.isAuthenticated;
-      });
-      if (_isConnected) {
+      _appState.setConnected(_stravaService.isAuthenticated);
+      if (_appState.isConnected) {
         _addLog("Connected to Strava session.");
       } else {
         _addLog("Welcome! Please connect to Strava.");
@@ -290,6 +295,10 @@ class _DashboardPageState extends State<DashboardPage>
     } catch (e) {
       _addLog("Failed to initialize Strava service: $e", isError: true);
     }
+  }
+
+  String getExtension(String fileName) {
+    return fileName.split('.').last.toLowerCase();
   }
 
   void _initDeepLinks() async {
@@ -310,8 +319,8 @@ class _DashboardPageState extends State<DashboardPage>
             // Handle file open request (iOS "Open with...")
             try {
               final filePath = uri.toFilePath();
-              final ext = p.extension(filePath).toLowerCase();
-              if (ext == '.fit' || ext == '.gpx' || ext == '.tcx') {
+              final ext = getExtension(filePath);
+              if (ext == 'fit' || ext == 'gpx' || ext == 'tcx') {
                 _addLog("Detected file from link: $filePath");
                 // Delay slightly to ensure UI is ready if app was just launched
                 Future.delayed(const Duration(milliseconds: 500), () {
@@ -361,9 +370,7 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       final success = await _stravaService.handleAuthCallback(uri);
       if (mounted) {
-        setState(() {
-          _isConnected = success;
-        });
+        _appState.setConnected(success);
         if (success) {
           _addLog("Authorization successful! Ready to upload.");
           if (kIsWeb) {
@@ -373,33 +380,25 @@ class _DashboardPageState extends State<DashboardPage>
               _addLog("Failed to clear URL parameters: $e", isError: true);
             }
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.connectedSuccess),
-              backgroundColor: Colors.green,
-            ),
+          context.showToast(
+            AppLocalizations.of(context)!.connectedSuccess,
+            backgroundColor: Colors.green,
           );
         } else {
           _addLog("Authorization failed.", isError: true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.authFailed),
-              backgroundColor: Colors.red,
-            ),
+          context.showToast(
+            AppLocalizations.of(context)!.authFailed,
+            backgroundColor: Colors.red,
           );
         }
       }
     } catch (e) {
       _addLog("Auth error: $e", isError: true);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.connectionError(e.toString()),
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
+        context.showToast(
+          AppLocalizations.of(context)!.connectionError(e.toString()),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         );
       }
     }
@@ -452,15 +451,12 @@ class _DashboardPageState extends State<DashboardPage>
     );
 
     if (confirmed == true) {
-      _disconnect();
+      _appState.setConnected(false);
     }
   }
 
   Future<void> _disconnect() async {
     await _stravaService.logout();
-    setState(() {
-      _isConnected = false;
-    });
     _addLog("Disconnected from Strava.");
   }
 
@@ -468,8 +464,8 @@ class _DashboardPageState extends State<DashboardPage>
     _addLog("Received shared files: ${files.length}");
     for (var file in files) {
       _addLog("Checking file: ${file.path}");
-      final ext = p.extension(file.path).toLowerCase();
-      if (ext == '.fit' || ext == '.gpx' || ext == '.tcx') {
+      final ext = getExtension(file.path);
+      if (ext == 'fit' || ext == 'gpx' || ext == 'tcx') {
         _showUploadDialog(XFile(file.path));
         break;
       } else {
@@ -496,16 +492,13 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _showUploadDialog(XFile file) {
-    if (!_isConnected) {
+    if (!_appState.isConnected) {
       _addLog("Please connect to Strava to upload ${file.name}", isError: true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.pleaseConnectFirst),
-        ),
-      );
+      context.showToast(AppLocalizations.of(context)!.pleaseConnectFirst);
       return;
     }
     String tempSportType = 'Default';
+    Navigator.of(context).popUntil((route) => route.isFirst);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -642,7 +635,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Future<void> _uploadFile(XFile file, String type) async {
+  Future<void> _uploadFile(XFile file, String sportType) async {
     XFile uploadFile = file;
 
     //iOS Sandboxing Fix: Copy file to app's temp directory
@@ -657,12 +650,8 @@ class _DashboardPageState extends State<DashboardPage>
       } catch (e) {
         _addLog("Failed to copy file: $e", isError: true);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.cannotAccessFile(file.path),
-              ),
-            ),
+          context.showToast(
+            AppLocalizations.of(context)!.cannotAccessFile(file.path),
           );
         }
         return;
@@ -676,34 +665,32 @@ class _DashboardPageState extends State<DashboardPage>
     final fileName = uploadFile.name;
     _addLog("Starting upload: $fileName...");
     if (CoordManager().gcjCorrection == true) {
-      uploadFile = await CoordFixer.processFile(uploadFile);
+      uploadFile = await CoordFixer.processFile(
+        uploadFile,
+        getExtension(uploadFile.name),
+      );
     }
     try {
-      final resultMsg = await _stravaService.uploadStravaFile(uploadFile, type);
+      final resultMsg = await _stravaService.uploadStravaFile(
+        uploadFile,
+        sportType,
+      );
       _addLog("Success: $resultMsg");
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.uploadFileSuccess(fileName),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showToast(
+          AppLocalizations.of(context)!.uploadFileSuccess(fileName),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
         );
       }
     } catch (e) {
       _addLog("Upload failed: $e", isError: true);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.uploadFileFailed(fileName),
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showToast(
+          AppLocalizations.of(context)!.uploadFileFailed(fileName),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         );
       }
     } finally {
@@ -720,33 +707,37 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    return ListenableBuilder(
+      listenable: _appState,
+      builder: (context, child) {
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                // Status Card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildStatusCard(theme),
+                ),
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Status Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildStatusCard(theme),
+                const SizedBox(height: 30),
+
+                // Main Action Area
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildMainActionArea(theme),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+              ],
             ),
-
-            const SizedBox(height: 30),
-
-            // Main Action Area
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildMainActionArea(theme),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -755,7 +746,7 @@ class _DashboardPageState extends State<DashboardPage>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: _isConnected
+          colors: _appState.isConnected
               ? [const Color(0xFFFC4C02), const Color(0xFFFF8243)]
               : [theme.cardColor, theme.cardColor],
           begin: Alignment.topLeft,
@@ -764,7 +755,7 @@ class _DashboardPageState extends State<DashboardPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _isConnected
+            color: _appState.isConnected
                 ? const Color(0xFFFC4C02).withValues(alpha: 0.3)
                 : Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
@@ -781,8 +772,12 @@ class _DashboardPageState extends State<DashboardPage>
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _isConnected ? Icons.check_rounded : Icons.link_off_rounded,
-              color: _isConnected ? Colors.white : theme.iconTheme.color,
+              _appState.isConnected
+                  ? Icons.check_rounded
+                  : Icons.link_off_rounded,
+              color: _appState.isConnected
+                  ? Colors.white
+                  : theme.iconTheme.color,
               size: 24,
             ),
           ),
@@ -792,22 +787,22 @@ class _DashboardPageState extends State<DashboardPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isConnected
+                  _appState.isConnected
                       ? AppLocalizations.of(context)!.statusConnected
                       : AppLocalizations.of(context)!.statusNotConnected,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: _isConnected
+                    color: _appState.isConnected
                         ? Colors.white
                         : theme.textTheme.titleMedium?.color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  _isConnected
+                  _appState.isConnected
                       ? AppLocalizations.of(context)!.readyToSync
                       : AppLocalizations.of(context)!.connectToStart,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: _isConnected
+                    color: _appState.isConnected
                         ? Colors.white.withValues(alpha: 0.9)
                         : theme.hintColor,
                   ),
@@ -817,18 +812,15 @@ class _DashboardPageState extends State<DashboardPage>
           ),
           IconButton(
             icon: const Icon(Icons.settings_rounded),
-            color: _isConnected ? Colors.white : theme.iconTheme.color,
+            color: _appState.isConnected ? Colors.white : theme.iconTheme.color,
             tooltip: AppLocalizations.of(context)!.settingsTooltip,
             onPressed: () async {
-              final result = await Navigator.of(context).push<bool?>(
+              Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
-              if (result == true && mounted) {
-                _disconnect();
-              }
             },
           ),
-          if (_isConnected) ...[
+          if (_appState.isConnected) ...[
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.logout_rounded),
@@ -843,7 +835,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildMainActionArea(ThemeData theme) {
-    if (!_isConnected) {
+    if (!_appState.isConnected) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

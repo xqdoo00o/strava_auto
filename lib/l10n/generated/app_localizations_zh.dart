@@ -87,20 +87,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get experimentalSection => '实验性功能';
 
   @override
-  String get oneLapSyncTitle => '顽鹿自动同步';
+  String get oneLap => '顽鹿';
 
   @override
-  String get oneLapSyncSubtitle => '自动同步顽鹿运动记录到 Strava';
+  String get keep => 'Keep';
+
+  @override
+  String thirdSyncTitle(Object aThirdName) {
+    return '$aThirdName自动同步';
+  }
+
+  @override
+  String thirdSyncSubtitle(Object aThirdName, Object sportName) {
+    return '自动同步$aThirdName$sportName记录到 Strava';
+  }
 
   @override
   String get backgroundSyncTip =>
       '注意：后台同步依赖系统调度。\n• iOS：手动划掉应用会停止同步，需重新打开应用以激活。\n• Android：建议开启“自启动”并关闭“电池优化”以保证同步稳定。';
 
   @override
-  String get oneLapLoginTitle => '连接顽鹿';
+  String thirdLoginTitle(Object aThirdName) {
+    return '连接$aThirdName';
+  }
 
   @override
-  String get oneLapLoginDescription => '连接您的顽鹿账号以自动同步活动到 Strava。';
+  String thirdLoginDescription(Object aThirdName, Object sportName) {
+    return '连接您的$aThirdName账号以自动同步$sportName活动到 Strava。';
+  }
+
+  @override
+  String get phoneLabel => '手机号';
 
   @override
   String get accountLabel => '账号 / 手机号';
@@ -109,7 +126,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passwordLabel => '密码';
 
   @override
-  String get connectSyncButton => '连接并同步';
+  String get connectSyncButton => '连接';
 
   @override
   String get reconnectButton => '重新连接';
@@ -118,7 +135,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get disconnectAccountButton => '断开账号';
 
   @override
-  String get loginSuccess => '成功连接顽鹿！';
+  String loginSuccess(Object aThirdName) {
+    return '成功连接$aThirdName！';
+  }
 
   @override
   String get loginFailed => '登录失败，请检查账号密码。';

@@ -7,17 +7,17 @@ import 'package:path_provider/path_provider.dart';
 
 // Duplicate service logic here to make it self-contained for background tasks if needed,
 // or just import the service. Importing is better.
-import 'onelap_service.dart';
+import 'keep_service.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
 
-class OneLapManager extends ChangeNotifier {
-  static final OneLapManager _instance = OneLapManager._internal();
-  factory OneLapManager() => _instance;
-  OneLapManager._internal();
+class KeepManager extends ChangeNotifier {
+  static final KeepManager _instance = KeepManager._internal();
+  factory KeepManager() => _instance;
+  KeepManager._internal();
 
   final _storage = const FlutterSecureStorage();
-  final _service = OneLapService();
+  final _service = KeepService();
   final _stravaService = GetIt.I<StravaService>();
 
   bool _isSyncing = false;
@@ -27,7 +27,7 @@ class OneLapManager extends ChangeNotifier {
   String? get username => _username;
 
   Future<void> init() async {
-    _username = await _storage.read(key: 'onelap_username');
+    _username = await _storage.read(key: 'keep_username');
     notifyListeners();
   }
 
@@ -36,41 +36,40 @@ class OneLapManager extends ChangeNotifier {
       final result = await _service.login(username, password);
       if (result['success'] == true) {
         // Save credentials securely
-        await _storage.write(key: 'onelap_username', value: username);
-        await _storage.write(key: 'onelap_password', value: password);
+        await _storage.write(key: 'keep_username', value: username);
+        await _storage.write(key: 'keep_password', value: password);
         _username = username;
 
         // Initial sync of existing activities (mark as synced without uploading)
-        await _markAllAsSynced();
+        // await _markAllAsSynced();
 
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
-      LogManager().addLog("OneLap Login Error: $e", isError: true);
+      LogManager().addLog("Keep Login Error: $e", isError: true);
       return false;
     }
   }
 
   Future<void> logout() async {
-    await _storage.delete(key: 'onelap_username');
-    await _storage.delete(key: 'onelap_password');
+    await _storage.delete(key: 'keep_username');
+    await _storage.delete(key: 'keep_password');
     _username = null;
     notifyListeners();
   }
 
   Future<void> _markAllAsSynced() async {
     try {
-      final activities = await _service.getActivities();
+      final activities = await _service.getActivities("running");
       final prefs = await SharedPreferences.getInstance();
-      // change fileKey to _id for future otm.onelap.cn API compatibility
       final List<String> syncedIds = activities
-          .map((e) => e['_id'].toString())
+          .map((e) => e['id'].toString())
           .toList();
-      await prefs.setStringList('onelap_synced_ids', syncedIds);
+      await prefs.setStringList('keep_synced_ids', syncedIds);
       LogManager().addLog(
-        "Marked ${syncedIds.length} OneLap activities as synced.",
+        "Marked ${syncedIds.length} Keep activities as synced.",
       );
     } catch (e) {
       LogManager().addLog("Failed to mark initial sync: $e", isError: true);
@@ -82,46 +81,47 @@ class OneLapManager extends ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
 
+    // running: 跑步 cycling: 骑行
+    final sportType = "running";
     int syncedCount = 0;
-
     try {
       // 1. Get credentials
-      final username = await _storage.read(key: 'onelap_username');
-      final password = await _storage.read(key: 'onelap_password');
+      final username = await _storage.read(key: 'keep_username');
+      final password = await _storage.read(key: 'keep_password');
 
       if (username == null || password == null) {
-        LogManager().addLog("OneLap Sync Skipped: No credentials.");
+        LogManager().addLog("Keep Sync Skipped: No credentials.");
         throw Exception("No credentials found. Please login again.");
       }
 
       // 2. Login
-      LogManager().addLog("OneLap Sync: Logging in...");
+      LogManager().addLog("Keep Sync: Logging in...");
       final loginResult = await _service.login(username, password);
       if (loginResult['success'] != true) {
-        LogManager().addLog("OneLap Sync Failed: Login error.");
+        LogManager().addLog("Keep Sync Failed: Login error.");
         throw Exception(
           "Login failed: ${loginResult['msg'] ?? 'Unknown error'}",
         );
       }
 
       // 3. Fetch list
-      LogManager().addLog("OneLap Sync: Fetching activities...");
-      final activities = await _service.getActivities();
+      LogManager().addLog("Keep Sync: Fetching activities...");
+      final activities = await _service.getActivities(sportType);
 
       // 4. Compare with local
       final prefs = await SharedPreferences.getInstance();
-      final syncedIds = prefs.getStringList('onelap_synced_ids') ?? [];
+      final syncedIds = prefs.getStringList('keep_synced_ids') ?? [];
       final newActivities = activities
-          .where((a) => !syncedIds.contains(a['_id']))
+          .where((a) => !syncedIds.contains(a['id']))
           .toList();
 
       if (newActivities.isEmpty) {
-        LogManager().addLog("OneLap Sync: No new activities.");
+        LogManager().addLog("Keep Sync: No new activities.");
         return 0;
       }
 
       LogManager().addLog(
-        "OneLap Sync: Found ${newActivities.length} new activities.",
+        "Keep Sync: Found ${newActivities.length} new activities.",
       );
 
       // 5. Download & Upload
@@ -132,25 +132,24 @@ class OneLapManager extends ChangeNotifier {
       }
 
       for (var activity in newActivities.reversed) {
-        final fileKey = activity['fileKey'];
-        final fileName = fileKey.split('/').last;
-        final downloadUrl = activity['durl'];
+        final fileKey = activity['fileName'];
+        final activityId = activity['id'];
 
         try {
-          LogManager().addLog("Downloading $fileName...");
-          final savePath = '$dirPath$fileName';
-          final file = await _service.downloadFit(
-            downloadUrl,
-            fileKey,
+          LogManager().addLog("Downloading $fileKey...");
+          final savePath = '$dirPath$fileKey';
+          final file = await _service.getActivityData(
+            activityId,
             savePath,
+            sportType,
           );
 
-          LogManager().addLog("Uploading $fileName to Strava...");
+          LogManager().addLog("Uploading $fileKey to Strava...");
           await _stravaService.uploadStravaFile(file, 'Default');
 
           // Mark as synced
-          syncedIds.insert(0, activity['_id']);
-          await prefs.setStringList('onelap_synced_ids', syncedIds);
+          syncedIds.insert(0, activityId);
+          await prefs.setStringList('keep_synced_ids', syncedIds);
 
           syncedCount++;
 
@@ -159,13 +158,13 @@ class OneLapManager extends ChangeNotifier {
             if (await File(file.path).exists()) await File(file.path).delete();
           }
         } catch (e) {
-          LogManager().addLog("Failed to sync $fileName: $e", isError: true);
+          LogManager().addLog("Failed to sync $fileKey: $e", isError: true);
         }
       }
 
       return syncedCount;
     } catch (e) {
-      LogManager().addLog("OneLap Sync Error: $e", isError: true);
+      LogManager().addLog("Keep Sync Error: $e", isError: true);
       rethrow;
     } finally {
       _isSyncing = false;

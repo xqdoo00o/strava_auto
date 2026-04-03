@@ -4,14 +4,18 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'coord_fixer.dart';
 import 'package:cross_file/cross_file.dart';
 
 class OneLapService {
   static const String _loginUrl = 'https://www.onelap.cn/api/login';
   static const String _activityListUrl = 'https://u.onelap.cn/analysis/list';
+  static const String _otmUrl =
+      'https://otm.onelap.cn/api/otm/ride_record/analysis/fit_content/';
   static const String _secretKey = 'fe9f8382418fcdeb136461cac6acae7b';
 
   String? _cookie;
+  String? _token;
 
   bool get isLoggedIn => _cookie != null;
 
@@ -22,11 +26,13 @@ class OneLapService {
 
   Future<Map<String, dynamic>> login(String account, String password) async {
     final nonce = const Uuid().v4().replaceAll('-', '').substring(16);
-    final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+    final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
+        .toString();
     final passwordMd5 = _md5(password);
 
     // Sign: MD5(account=...&nonce=...&password=MD5(pwd)&timestamp=...&key=...)
-    final signStr = "account=$account&nonce=$nonce&password=$passwordMd5&timestamp=$timestamp&key=$_secretKey";
+    final signStr =
+        "account=$account&nonce=$nonce&password=$passwordMd5&timestamp=$timestamp&key=$_secretKey";
     final sign = _md5(signStr);
 
     final headers = {
@@ -36,10 +42,7 @@ class OneLapService {
       'Content-Type': 'application/json',
     };
 
-    final body = jsonEncode({
-      'account': account,
-      'password': passwordMd5,
-    });
+    final body = jsonEncode({'account': account, 'password': passwordMd5});
 
     try {
       final response = await http.post(
@@ -56,16 +59,16 @@ class OneLapService {
         // Then `JSONObject loginData = data.getJSONObject(0);` - this part is a bit ambiguous in user's text ("解析登录返回的数据").
         // Usually such APIs return {code: 0, msg: "success", data: [...]} or just [...]
         // I'll assume standard response wrapper or direct array based on user's "data.getJSONObject(0)".
-        
+
         // Let's print response body for debugging if we could, but here I have to implement based on assumption.
-        // Assuming response structure: { code: 0, data: [{ token: ..., refresh_token: ..., userinfo: { uid: ... } }] } 
+        // Assuming response structure: { code: 0, data: [{ token: ..., refresh_token: ..., userinfo: { uid: ... } }] }
         // OR directly [{ token: ... }]
-        
+
         // Safest approach: check type of `data`.
-        
+
         dynamic responseData = data;
         if (data is Map && data.containsKey('data')) {
-            responseData = data['data'];
+          responseData = data['data'];
         }
 
         if (responseData is List && responseData.isNotEmpty) {
@@ -76,12 +79,19 @@ class OneLapService {
 
           // Construct Cookie
           _cookie = "ouid=$uid; XSRF-TOKEN=$token; OTOKEN=$refreshToken";
+          _token = token;
           return {'success': true, 'cookie': _cookie};
         } else {
-           return {'success': false, 'message': 'Invalid response format: $data'};
+          return {
+            'success': false,
+            'message': 'Invalid response format: $data',
+          };
         }
       } else {
-        return {'success': false, 'message': 'HTTP Error: ${response.statusCode}'};
+        return {
+          'success': false,
+          'message': 'HTTP Error: ${response.statusCode}',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': e.toString()};
@@ -101,8 +111,8 @@ class OneLapService {
         final data = jsonDecode(response.body);
         // User example: JSONArray myActivities = myActivitiesData.getJSONArray("data");
         if (data is Map && data.containsKey('data')) {
-            final list = data['data'] as List;
-            return list.map((e) => e as Map<String, dynamic>).toList();
+          final list = data['data'] as List;
+          return list.map((e) => e as Map<String, dynamic>).toList();
         }
         return [];
       } else {
@@ -113,20 +123,40 @@ class OneLapService {
     }
   }
 
-  Future<XFile> downloadFit(String url, String savePath) async {
-    final response = await http.post(Uri.parse(url)); // User example says POST for download
+  Future<XFile> downloadFit(String url, String fileKey, String savePath) async {
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
+      // Magene new firmware fit coordinates are GCJ-02 system, need to fix coordinates
+      final bytes = await CoordFixer.processFitBytes(response.bodyBytes);
       final XFile xfile;
-      if (kIsWeb){
-        xfile = XFile.fromData(response.bodyBytes, name: savePath);
-      }else{
+      if (kIsWeb) {
+        xfile = XFile.fromData(bytes, name: savePath);
+      } else {
         final file = File(savePath);
-        await file.writeAsBytes(response.bodyBytes);
+        await file.writeAsBytes(bytes);
         xfile = XFile(file.path);
       }
       return xfile;
     } else {
-      throw Exception('Failed to download file: ${response.statusCode}');
+      // fallback to original file if fixed file not found, maybe the file is not in GCJ-02 system
+      final response2 = await http.get(
+        Uri.parse(_otmUrl + base64Encode(utf8.encode(fileKey))),
+        headers: {'Authorization': _token!},
+      );
+      if (response2.statusCode == 200) {
+        final bytes = await CoordFixer.processFitBytes(response2.bodyBytes);
+        final XFile xfile;
+        if (kIsWeb) {
+          xfile = XFile.fromData(bytes, name: savePath);
+        } else {
+          final file = File(savePath);
+          await file.writeAsBytes(bytes);
+          xfile = XFile(file.path);
+        }
+        return xfile;
+      } else {
+        throw Exception('Failed to download file: ${response.statusCode}');
+      }
     }
   }
 }

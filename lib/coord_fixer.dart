@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:path/path.dart' as p;
+import 'dart:typed_data';
 import 'package:fit_tool/fit_tool.dart';
 import 'package:xml/xml.dart';
 import 'package:cross_file/cross_file.dart';
 
 extension GpsFormatter on double {
   String toGpsString() {
-    // 1. 先强制转为 10 位小数（足以覆盖厘米级精度并避开科学计数法）
-    // 2. 使用正则替换：去掉末尾所有的 0，如果最后剩下的是小数点，也一并去掉
     return toStringAsFixed(10).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 }
@@ -107,9 +105,8 @@ class CoordFixer {
     }
   }
 
-  static Future<XFile> processFit(XFile inputFile) async {
-    final bytes = await inputFile.readAsBytes();
-    final fitFile = FitFile.fromBytes(bytes);
+  static Future<Uint8List> processFitBytes(Uint8List fitBytes) async {
+    final fitFile = FitFile.fromBytes(fitBytes);
 
     for (var record in fitFile.records) {
       final msg = record.message;
@@ -163,15 +160,22 @@ class CoordFixer {
       }
     }
 
-    // 3. 重新编码为二进制
     fitFile.crc = null; // 重新计算 CRC
-    final outBytes = fitFile.toBytes();
-    final outputFile = XFile.fromData(outBytes, name: inputFile.name);
+    return fitFile.toBytes();
+  }
+
+  static Future<XFile> processFit(XFile inputFile) async {
+    final bytes = await inputFile.readAsBytes();
+    final outBytes = await processFitBytes(bytes);
+    final outputFile = XFile.fromData(
+      outBytes,
+      name: inputFile.name,
+      path: inputFile.path,
+    );
     return outputFile;
   }
 
   static Future<XFile> processGpx(XFile inputFile) async {
-    // 1. 读取 GPX 文件内容
     final gpxString = await inputFile.readAsString();
     final document = XmlDocument.parse(gpxString);
     const coordinateTags = ['trkpt', 'wpt', 'rtept'];
@@ -195,6 +199,7 @@ class CoordFixer {
     return XFile.fromData(
       utf8.encode(document.toXmlString()),
       name: inputFile.name,
+      path: inputFile.path,
     );
   }
 
@@ -220,19 +225,19 @@ class CoordFixer {
     return XFile.fromData(
       utf8.encode(document.toXmlString()),
       name: inputFile.name,
+      path: inputFile.path,
     );
   }
 
-  static Future<XFile> processFile(XFile inputFile) async {
-    final ext = p.extension(inputFile.name).toLowerCase();
-    if (ext == '.fit') {
+  static Future<XFile> processFile(XFile inputFile, String fileType) async {
+    if (fileType == 'fit') {
       return await processFit(inputFile);
-    } else if (ext == '.gpx') {
+    } else if (fileType == 'gpx') {
       return await processGpx(inputFile);
-    } else if (ext == '.tcx') {
+    } else if (fileType == 'tcx') {
       return await processTcx(inputFile);
     } else {
-      throw Exception('Unsupported file type: $ext');
+      throw Exception('Unsupported file type: $fileType');
     }
   }
 }
