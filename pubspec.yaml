@@ -1,7 +1,7 @@
 name: starva_auto
 description: "Strava Auto - Upload Tool for Strava"
 publish_to: 'none'
-version: 0.8.0+3
+version: 0.8.5+4
 
 environment:
   sdk: ^3.11.0
@@ -30,7 +30,6 @@ dependencies:
   shared_preferences: ^2.5.4
   url_launcher: ^6.3.2
   uuid: ^4.5.3
-  workmanager: ^0.9.0+3
   xml: ^6.6.1
 
 dev_dependencies:

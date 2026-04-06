@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_it/get_it.dart';
+import 'app_state.dart';
 import 'extension.dart';
 import 'onelap_manager.dart';
-import 'package:flutter/foundation.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class OneLapLoginPage extends StatefulWidget {
@@ -14,7 +14,10 @@ class OneLapLoginPage extends StatefulWidget {
 }
 
 class _OneLapLoginPageState extends State<OneLapLoginPage> {
+  final AppState appState = GetIt.I<AppState>();
   final _formKey = GlobalKey<FormState>();
+  DateTime? _lastSyncDate;
+  final _nowDate = DateTime.now();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -23,7 +26,25 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
   @override
   void initState() {
     super.initState();
+    _initDate();
     _loadCredentials();
+  }
+
+  Future<void> _initDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastSyncTime = prefs.getInt('onelap_last_sync_time');
+
+    if (mounted) {
+      setState(() {
+        if (lastSyncTime != null && lastSyncTime > 0) {
+          _lastSyncDate = DateTime.fromMillisecondsSinceEpoch(
+            lastSyncTime * 1000,
+          );
+        } else {
+          _lastSyncDate = DateTime.parse("2026-01-01");
+        }
+      });
+    }
   }
 
   Future<void> _loadCredentials() async {
@@ -60,39 +81,38 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
           context.showToast(
             AppLocalizations.of(
               context,
-            )!.loginSuccess(AppLocalizations.of(context)!.loginSuccess),
+            )!.loginSuccess(AppLocalizations.of(context)!.oneLap),
           );
-
-          // Request battery optimization permission on Android after successful login
-          _requestBatteryOptimization();
-
-          Navigator.pop(context);
         }
       });
     }
   }
 
-  Future<void> _requestBatteryOptimization() async {
-    if (!kIsWeb && Platform.isAndroid) {
-      final status = await Permission.ignoreBatteryOptimizations.status;
-      if (!status.isGranted) {
-        await Permission.ignoreBatteryOptimizations.request();
-      }
-    }
-  }
-
   Future<void> _handleSyncNow() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (appState.isConnected == false) {
+      context.showToast(l10n.statusPleaseConnect, backgroundColor: Colors.red);
+      return;
+    }
     setState(() {
       _isLoading = true;
     });
 
-    final l10n = AppLocalizations.of(context)!;
     context.showToast(l10n.syncingMessage);
 
     try {
-      final syncedCount = await OneLapManager().syncNow();
+      final syncedCount = await OneLapManager().syncNow(_lastSyncDate);
       if (mounted) {
         context.showToast(l10n.syncSuccessMessage(syncedCount));
+        final prefs = await SharedPreferences.getInstance();
+        final nowTime = DateTime.now();
+        await prefs.setInt(
+          'onelap_last_sync_time',
+          (nowTime.millisecondsSinceEpoch ~/ 1000),
+        );
+        setState(() {
+          _lastSyncDate = nowTime;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -107,6 +127,57 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _lastSyncDate,
+      firstDate: DateTime(2020),
+      lastDate: _nowDate,
+      builder: (BuildContext context, Widget? child) {
+        final theme = Theme.of(context);
+        return Center(
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() => _lastSyncDate = null);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.history),
+                    label: Text(
+                      AppLocalizations.of(context)!.clearDate,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.errorContainer,
+                      foregroundColor: theme.colorScheme.onErrorContainer,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                child!,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _lastSyncDate = picked;
+      });
     }
   }
 
@@ -186,6 +257,21 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
               ),
               const SizedBox(height: 16),
               if (OneLapManager().username != null) ...[
+                ElevatedButton.icon(
+                  onPressed: () => _pickDate(context),
+                  icon: Icon(Icons.calendar_today),
+                  label: Text(
+                    _lastSyncDate == null
+                        ? l10n.allActivities
+                        : "${_lastSyncDate!.toIso8601String().split('T')[0]} ${l10n.postActivities}",
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.tertiary,
+                    foregroundColor: theme.colorScheme.onTertiary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleSyncNow,
                   style: ElevatedButton.styleFrom(
@@ -226,35 +312,6 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        l10n.backgroundSyncTip,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

@@ -93,18 +93,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keep => 'Keep';
 
   @override
+  String get allActivities => '全部历史活动';
+
+  @override
+  String get postActivities => '后的活动';
+
+  @override
+  String get clearDate => '清除日期（同步全部活动）';
+
+  @override
   String thirdSyncTitle(Object aThirdName) {
-    return '$aThirdName自动同步';
+    return '$aThirdName同步';
   }
 
   @override
   String thirdSyncSubtitle(Object aThirdName, Object sportName) {
-    return '自动同步$aThirdName$sportName记录到 Strava';
+    return '同步$aThirdName$sportName记录到 Strava';
   }
-
-  @override
-  String get backgroundSyncTip =>
-      '注意：后台同步依赖系统调度。\n• iOS：手动划掉应用会停止同步，需重新打开应用以激活。\n• Android：建议开启“自启动”并关闭“电池优化”以保证同步稳定。';
 
   @override
   String thirdLoginTitle(Object aThirdName) {
@@ -113,7 +118,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String thirdLoginDescription(Object aThirdName, Object sportName) {
-    return '连接您的$aThirdName账号以自动同步$sportName活动到 Strava。';
+    return '连接您的$aThirdName账号以同步$sportName活动到 Strava。';
   }
 
   @override
@@ -253,7 +258,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uploading => '正在上传...';
 
   @override
-  String get tapToSelect => '点击选择 .FIT .GPX .TCX文件';
+  String get tapToSelect => '点击选择 .FIT .TCX .GPX文件';
 
   @override
   String get orShare => '或从其他应用分享';

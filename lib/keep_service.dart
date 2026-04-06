@@ -66,10 +66,17 @@ class KeepService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getActivities(String sportType) async {
+  Future<List<Map<String, dynamic>>> getActivities(
+    String sportType,
+    DateTime? lastSyncDate,
+  ) async {
     if (_token == null) throw Exception('Not logged in');
+    final lastSyncTimeStamp = lastSyncDate != null
+        ? lastSyncDate.millisecondsSinceEpoch
+        : 0;
     int lastDate = 0;
     List<Map<String, dynamic>> result = [];
+    outerLoop:
     while (true) {
       final response = await http.get(
         Uri.parse('$_activityIdsUrl&type=$sportType&last_date=$lastDate'),
@@ -84,16 +91,13 @@ class KeepService {
             final logs = record['logs'] as List;
             for (var log in logs) {
               final stats = log['stats'] as Map<String, dynamic>;
-              if (stats['isDoubtful'] == false) {
+              if (stats['isDoubtful'] == false && stats['startTime'] != null) {
+                final startTime = stats['startTime'] as int;
+                if (startTime < lastSyncTimeStamp) {
+                  break outerLoop;
+                }
                 final name =
-                    (stats['startTime'] != null && stats['name'] != null)
-                    ? DateTime.fromMillisecondsSinceEpoch(
-                            stats['startTime'] as int,
-                            isUtc: true,
-                          ).toLocal().toIso8601String() +
-                          stats['name'] +
-                          ".tcx"
-                    : 'Unknown';
+                    "${DateTime.fromMillisecondsSinceEpoch(startTime).toIso8601String()}_${stats['name'] ?? ""}.tcx";
                 result.add({'id': stats['id'].toString(), 'fileName': name});
               }
             }

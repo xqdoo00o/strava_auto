@@ -274,7 +274,7 @@ class SettingsPage extends StatelessWidget {
                     color: Color(0xFFFC4C02),
                   ),
                   title: Text(AppLocalizations.of(context)!.versionTitle),
-                  trailing: const Text("1.0.0"),
+                  trailing: const Text("0.8.5"),
                 ),
                 const Divider(height: 1),
                 ListTile(

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 
 // Duplicate service logic here to make it self-contained for background tasks if needed,
@@ -40,9 +39,6 @@ class KeepManager extends ChangeNotifier {
         await _storage.write(key: 'keep_password', value: password);
         _username = username;
 
-        // Initial sync of existing activities (mark as synced without uploading)
-        // await _markAllAsSynced();
-
         notifyListeners();
         return true;
       }
@@ -60,23 +56,7 @@ class KeepManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _markAllAsSynced() async {
-    try {
-      final activities = await _service.getActivities("running");
-      final prefs = await SharedPreferences.getInstance();
-      final List<String> syncedIds = activities
-          .map((e) => e['id'].toString())
-          .toList();
-      await prefs.setStringList('keep_synced_ids', syncedIds);
-      LogManager().addLog(
-        "Marked ${syncedIds.length} Keep activities as synced.",
-      );
-    } catch (e) {
-      LogManager().addLog("Failed to mark initial sync: $e", isError: true);
-    }
-  }
-
-  Future<int> syncNow() async {
+  Future<int> syncNow(DateTime? lastSyncDate) async {
     if (_isSyncing) return 0;
     _isSyncing = true;
     notifyListeners();
@@ -106,23 +86,19 @@ class KeepManager extends ChangeNotifier {
 
       // 3. Fetch list
       LogManager().addLog("Keep Sync: Fetching activities...");
-      final activities = await _service.getActivities(sportType);
-
-      // 4. Compare with local
-      final prefs = await SharedPreferences.getInstance();
-      final syncedIds = prefs.getStringList('keep_synced_ids') ?? [];
-      final newActivities = activities
-          .where((a) => !syncedIds.contains(a['id']))
-          .toList();
+      final newActivities = await _service.getActivities(
+        sportType,
+        lastSyncDate,
+      );
 
       if (newActivities.isEmpty) {
         LogManager().addLog("Keep Sync: No new activities.");
         return 0;
+      } else {
+        LogManager().addLog(
+          "Keep Sync: Found ${newActivities.length} new activities.",
+        );
       }
-
-      LogManager().addLog(
-        "Keep Sync: Found ${newActivities.length} new activities.",
-      );
 
       // 5. Download & Upload
       String dirPath = "";
@@ -147,10 +123,6 @@ class KeepManager extends ChangeNotifier {
           LogManager().addLog("Uploading $fileKey to Strava...");
           await _stravaService.uploadStravaFile(file, 'Default');
 
-          // Mark as synced
-          syncedIds.insert(0, activityId);
-          await prefs.setStringList('keep_synced_ids', syncedIds);
-
           syncedCount++;
 
           // Cleanup
@@ -161,7 +133,6 @@ class KeepManager extends ChangeNotifier {
           LogManager().addLog("Failed to sync $fileKey: $e", isError: true);
         }
       }
-
       return syncedCount;
     } catch (e) {
       LogManager().addLog("Keep Sync Error: $e", isError: true);

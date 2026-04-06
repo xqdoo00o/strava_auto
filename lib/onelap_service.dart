@@ -9,15 +9,17 @@ import 'package:cross_file/cross_file.dart';
 
 class OneLapService {
   static const String _loginUrl = 'https://www.onelap.cn/api/login';
-  static const String _activityListUrl = 'https://u.onelap.cn/analysis/list';
+  static const String _activityListUrl =
+      'https://otm.onelap.cn/api/otm/ride_record/list';
+  static const String _activityListDetailUrl =
+      'https://otm.onelap.cn/api/otm/ride_record/analysis/';
   static const String _otmUrl =
       'https://otm.onelap.cn/api/otm/ride_record/analysis/fit_content/';
   static const String _secretKey = 'fe9f8382418fcdeb136461cac6acae7b';
 
-  String? _cookie;
   String? _token;
 
-  bool get isLoggedIn => _cookie != null;
+  bool get isLoggedIn => _token != null;
 
   // Helper for MD5
   String _md5(String input) {
@@ -74,13 +76,9 @@ class OneLapService {
         if (responseData is List && responseData.isNotEmpty) {
           final loginData = responseData[0];
           final token = loginData['token'];
-          final refreshToken = loginData['refresh_token'];
-          final uid = loginData['userinfo']['uid'].toString();
 
-          // Construct Cookie
-          _cookie = "ouid=$uid; XSRF-TOKEN=$token; OTOKEN=$refreshToken";
           _token = token;
-          return {'success': true, 'cookie': _cookie};
+          return {'success': true, 'token': _token};
         } else {
           return {
             'success': false,
@@ -98,35 +96,64 @@ class OneLapService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getActivities() async {
-    if (_cookie == null) throw Exception('Not logged in');
-
-    try {
-      final response = await http.get(
+  Future<List<Map<String, dynamic>>> getActivities(
+    DateTime? lastSyncDate,
+  ) async {
+    if (_token == null) throw Exception('Not logged in');
+    var lastFormattedDate = "";
+    if (lastSyncDate != null) {
+      lastFormattedDate = lastSyncDate.toIso8601String().split("T").first;
+    }
+    List<Map<String, dynamic>> activities = [];
+    bool hasMore = true;
+    int page = 1;
+    while (hasMore) {
+      final response = await http.post(
         Uri.parse(_activityListUrl),
-        headers: {'Cookie': _cookie!},
+        headers: {'Authorization': _token!, 'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "page": page,
+          "limit": 20,
+          if (lastFormattedDate.isNotEmpty) "start_date": lastFormattedDate,
+        }),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // User example: JSONArray myActivities = myActivitiesData.getJSONArray("data");
         if (data is Map && data.containsKey('data')) {
-          final list = data['data'] as List;
-          return list.map((e) => e as Map<String, dynamic>).toList();
+          final list = data['data']['list'] as List;
+          activities.addAll(
+            list.map((e) => e as Map<String, dynamic>).toList(),
+          );
+          hasMore = data['data']['pagination']['has_more'] ?? false;
         }
-        return [];
       } else {
-        throw Exception('Failed to load activities: ${response.statusCode}');
+        throw Exception('Failed to get activities: ${response.statusCode}');
       }
-    } catch (e) {
-      throw Exception('Error fetching activities: $e');
     }
+    for (var activity in activities) {
+      final response = await http.get(
+        Uri.parse(_activityListDetailUrl + activity['id'].toString()),
+        headers: {'Authorization': _token!},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data.containsKey('data')) {
+          final detail = data['data']["ridingRecord"];
+          if (detail != null && detail['fileKey'] != null) {
+            activity['fileKey'] = detail['fileKey'];
+          }
+        }
+      }
+    }
+    return activities;
   }
 
-  Future<XFile> downloadFit(String url, String fileKey, String savePath) async {
-    final response = await http.get(Uri.parse(url));
+  Future<XFile> downloadFit(String fileKey, String savePath) async {
+    final response = await http.get(
+      Uri.parse(_otmUrl + base64Encode(utf8.encode(fileKey))),
+      headers: {'Authorization': _token!},
+    );
     if (response.statusCode == 200) {
-      // Magene new firmware fit coordinates are GCJ-02 system, need to fix coordinates
       final bytes = await CoordFixer.processFitBytes(response.bodyBytes);
       final XFile xfile;
       if (kIsWeb) {
@@ -138,25 +165,7 @@ class OneLapService {
       }
       return xfile;
     } else {
-      // fallback to original file if fixed file not found, maybe the file is not in GCJ-02 system
-      final response2 = await http.get(
-        Uri.parse(_otmUrl + base64Encode(utf8.encode(fileKey))),
-        headers: {'Authorization': _token!},
-      );
-      if (response2.statusCode == 200) {
-        final bytes = await CoordFixer.processFitBytes(response2.bodyBytes);
-        final XFile xfile;
-        if (kIsWeb) {
-          xfile = XFile.fromData(bytes, name: savePath);
-        } else {
-          final file = File(savePath);
-          await file.writeAsBytes(bytes);
-          xfile = XFile(file.path);
-        }
-        return xfile;
-      } else {
-        throw Exception('Failed to download file: ${response.statusCode}');
-      }
+      throw Exception('Failed to download file: ${response.statusCode}');
     }
   }
 }

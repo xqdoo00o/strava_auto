@@ -18,7 +18,6 @@ import 'locale_manager.dart';
 import 'coord_manager.dart';
 import 'coord_fixer.dart';
 import 'strava_setting.dart';
-import 'background_service.dart';
 import 'app_state.dart';
 import 'extension.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
@@ -30,7 +29,6 @@ final getIt = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) BackgroundService.initialize();
   final stravaService = StravaService();
   await stravaService.init();
   getIt.registerSingleton<AppState>(AppState());
@@ -320,7 +318,7 @@ class _DashboardPageState extends State<DashboardPage>
             try {
               final filePath = uri.toFilePath();
               final ext = getExtension(filePath);
-              if (ext == 'fit' || ext == 'gpx' || ext == 'tcx') {
+              if (ext == 'fit' || ext == 'tcx' || ext == 'gpx') {
                 _addLog("Detected file from link: $filePath");
                 // Delay slightly to ensure UI is ready if app was just launched
                 Future.delayed(const Duration(milliseconds: 500), () {
@@ -465,7 +463,7 @@ class _DashboardPageState extends State<DashboardPage>
     for (var file in files) {
       _addLog("Checking file: ${file.path}");
       final ext = getExtension(file.path);
-      if (ext == 'fit' || ext == 'gpx' || ext == 'tcx') {
+      if (ext == 'fit' || ext == 'tcx' || ext == 'gpx') {
         _showUploadDialog(XFile(file.path));
         break;
       } else {
@@ -481,7 +479,7 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['fit', 'gpx', 'tcx'],
+        allowedExtensions: ['fit', 'tcx', 'gpx'],
       );
       if (result != null && result.xFiles.isNotEmpty) {
         _showUploadDialog(result.xFiles.single);

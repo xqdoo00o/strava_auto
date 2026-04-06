@@ -96,8 +96,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keep => 'Keep';
 
   @override
+  String get allActivities => 'All Activities';
+
+  @override
+  String get postActivities => 'Post-Activities';
+
+  @override
+  String get clearDate => 'Clear Date (Sync All Activities)';
+
+  @override
   String thirdSyncTitle(Object aThirdName) {
-    return '$aThirdName Auto Sync';
+    return '$aThirdName Sync';
   }
 
   @override
@@ -106,17 +115,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backgroundSyncTip =>
-      'Note: Background sync relies on system scheduling.\n• iOS: Sync stops if you force-close the app. Re-open to activate.\n• Android: Please allow \'Autostart\' and disable \'Battery Optimization\' for reliable sync.';
-
-  @override
   String thirdLoginTitle(Object aThirdName) {
     return 'Connect $aThirdName';
   }
 
   @override
   String thirdLoginDescription(Object aThirdName, Object sportName) {
-    return 'Connect your $aThirdName account to automatically sync $sportName activities to Strava.';
+    return 'Connect your $aThirdName account to sync $sportName activities to Strava.';
   }
 
   @override
@@ -256,7 +261,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploading => 'Uploading...';
 
   @override
-  String get tapToSelect => 'Tap to Select .FIT .GPX .TCX File';
+  String get tapToSelect => 'Tap to Select .FIT .TCX .GPX File';
 
   @override
   String get orShare => 'or share from other apps';

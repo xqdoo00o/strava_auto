@@ -232,10 +232,10 @@ class CoordFixer {
   static Future<XFile> processFile(XFile inputFile, String fileType) async {
     if (fileType == 'fit') {
       return await processFit(inputFile);
-    } else if (fileType == 'gpx') {
-      return await processGpx(inputFile);
     } else if (fileType == 'tcx') {
       return await processTcx(inputFile);
+    } else if (fileType == 'gpx') {
+      return await processGpx(inputFile);
     } else {
       throw Exception('Unsupported file type: $fileType');
     }

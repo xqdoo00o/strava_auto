@@ -50,10 +50,10 @@
                 <data android:pathPattern=".*\\.fit" />
                 <data android:pathPattern=".*\\.FIT" />
                 <data android:pathPattern=".*\\.Fit" />
-                <data android:pathPattern=".*\\.gpx" />
-                <data android:pathPattern=".*\\.GPX" />
                 <data android:pathPattern=".*\\.tcx" />
                 <data android:pathPattern=".*\\.TCX" />
+                <data android:pathPattern=".*\\.gpx" />
+                <data android:pathPattern=".*\\.GPX" />
             </intent-filter>
 
             <!-- Handle open file directly (ACTION_VIEW) by MIME type (for content URIs without extension) -->
@@ -64,8 +64,8 @@
                 <data android:scheme="file" />
                 <data android:mimeType="application/fit" />
                 <data android:mimeType="application/vnd.ant.fit" />
-                <data android:mimeType="application/gpx+xml" />
                 <data android:mimeType="application/tcx+xml" />
+                <data android:mimeType="application/gpx+xml" />
                 <data android:mimeType="application/vnd.garmin.tcx+xml" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/xml" />

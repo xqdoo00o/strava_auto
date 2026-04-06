@@ -266,10 +266,28 @@ abstract class AppLocalizations {
   /// **'Keep'**
   String get keep;
 
+  /// No description provided for @allActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'All Activities'**
+  String get allActivities;
+
+  /// No description provided for @postActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-Activities'**
+  String get postActivities;
+
+  /// No description provided for @clearDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Date (Sync All Activities)'**
+  String get clearDate;
+
   /// No description provided for @thirdSyncTitle.
   ///
   /// In en, this message translates to:
-  /// **'{aThirdName} Auto Sync'**
+  /// **'{aThirdName} Sync'**
   String thirdSyncTitle(Object aThirdName);
 
   /// No description provided for @thirdSyncSubtitle.
@@ -277,12 +295,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync {aThirdName} {sportName} activities to Strava'**
   String thirdSyncSubtitle(Object aThirdName, Object sportName);
-
-  /// No description provided for @backgroundSyncTip.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Background sync relies on system scheduling.\n• iOS: Sync stops if you force-close the app. Re-open to activate.\n• Android: Please allow \'Autostart\' and disable \'Battery Optimization\' for reliable sync.'**
-  String get backgroundSyncTip;
 
   /// No description provided for @thirdLoginTitle.
   ///
@@ -293,7 +305,7 @@ abstract class AppLocalizations {
   /// No description provided for @thirdLoginDescription.
   ///
   /// In en, this message translates to:
-  /// **'Connect your {aThirdName} account to automatically sync {sportName} activities to Strava.'**
+  /// **'Connect your {aThirdName} account to sync {sportName} activities to Strava.'**
   String thirdLoginDescription(Object aThirdName, Object sportName);
 
   /// No description provided for @phoneLabel.
@@ -551,7 +563,7 @@ abstract class AppLocalizations {
   /// No description provided for @tapToSelect.
   ///
   /// In en, this message translates to:
-  /// **'Tap to Select .FIT .GPX .TCX File'**
+  /// **'Tap to Select .FIT .TCX .GPX File'**
   String get tapToSelect;
 
   /// No description provided for @orShare.
