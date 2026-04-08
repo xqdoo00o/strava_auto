@@ -125,6 +125,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get alreadyLatestVersion => 'Already up to date';
+
+  @override
+  String get findNewVersion => 'New version available';
+
+  @override
+  String get changelog => 'Changelog';
+
+  @override
+  String get versionNO => 'Version';
+
+  @override
+  String get updateNow => 'Update Now';
+
+  @override
   String get phoneLabel => 'Phone';
 
   @override

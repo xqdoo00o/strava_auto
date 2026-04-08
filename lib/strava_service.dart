@@ -169,22 +169,25 @@ class StravaService {
     if (sportType != 'Default') {
       request.fields['sport_type'] = sportType;
     }
+    try {
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
-    var streamedResponse = await request.send();
-    var response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      return 'Upload successful! Upload ID: ${data['id']}';
-    } else {
-      // Strava might return 409 for duplicate activity
-      final data = jsonDecode(response.body);
-      if (data['error'] != null) {
-        throw Exception('Upload failed: ${data['error']}');
-      } else if (data['message'] != null) {
-        throw Exception('Upload failed: ${data['message']}');
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return 'Upload successful! Upload ID: ${data['id']}';
+      } else {
+        // Strava might return 409 for duplicate activity
+        final data = jsonDecode(response.body);
+        if (data['error'] != null) {
+          throw Exception('Upload failed: ${data['error']}');
+        } else if (data['message'] != null) {
+          throw Exception('Upload failed: ${data['message']}');
+        }
+        throw Exception('Upload failed with status ${response.statusCode}');
       }
-      throw Exception('Upload failed with status ${response.statusCode}');
+    } catch (e) {
+      throw Exception("Upload failed: $e");
     }
   }
 }

@@ -308,6 +308,36 @@ abstract class AppLocalizations {
   /// **'Connect your {aThirdName} account to sync {sportName} activities to Strava.'**
   String thirdLoginDescription(Object aThirdName, Object sportName);
 
+  /// No description provided for @alreadyLatestVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get alreadyLatestVersion;
+
+  /// No description provided for @findNewVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'New version available'**
+  String get findNewVersion;
+
+  /// No description provided for @changelog.
+  ///
+  /// In en, this message translates to:
+  /// **'Changelog'**
+  String get changelog;
+
+  /// No description provided for @versionNO.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get versionNO;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get updateNow;
+
   /// No description provided for @phoneLabel.
   ///
   /// In en, this message translates to:

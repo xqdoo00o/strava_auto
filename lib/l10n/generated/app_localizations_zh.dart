@@ -96,7 +96,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allActivities => '全部历史活动';
 
   @override
-  String get postActivities => '后的活动';
+  String get postActivities => '起的活动';
 
   @override
   String get clearDate => '清除日期（同步全部活动）';
@@ -120,6 +120,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String thirdLoginDescription(Object aThirdName, Object sportName) {
     return '连接您的$aThirdName账号以同步$sportName活动到 Strava。';
   }
+
+  @override
+  String get alreadyLatestVersion => '已是最新版本';
+
+  @override
+  String get findNewVersion => '发现新版本';
+
+  @override
+  String get changelog => '更新内容';
+
+  @override
+  String get versionNO => '版本号';
+
+  @override
+  String get updateNow => '立即更新';
 
   @override
   String get phoneLabel => '手机号';

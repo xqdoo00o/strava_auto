@@ -12,6 +12,7 @@ import 'extension.dart';
 import 'package:flutter/material.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'package:get_it/get_it.dart';
+import 'upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -98,7 +99,9 @@ class SettingsPage extends StatelessWidget {
                     await StravaConfigUtils.showStravaConfigDialog(context);
                 if (shouldDisconnect) {
                   if (!context.mounted) return;
-                  context.showToast(AppLocalizations.of(context)!.stravaChangeTip);
+                  context.showToast(
+                    AppLocalizations.of(context)!.stravaChangeTip,
+                  );
                   appState.setConnected(false);
                 }
               },
@@ -274,7 +277,10 @@ class SettingsPage extends StatelessWidget {
                     color: Color(0xFFFC4C02),
                   ),
                   title: Text(AppLocalizations.of(context)!.versionTitle),
-                  trailing: const Text("0.8.5"),
+                  trailing: Text(AppUpgrader.currentVersion),
+                  onTap: () {
+                    AppUpgrader.checkUpgrade(context);
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
