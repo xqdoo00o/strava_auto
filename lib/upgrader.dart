@@ -8,7 +8,7 @@ import 'log_manager.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class AppUpgrader {
-  static const String currentVersion = "0.8.6";
+  static const String currentVersion = "0.9.0";
   static const String repoUrl =
       "https://api.github.com/repos/xqdoo00o/starva_auto/releases/latest";
   static int compareVersion(String newVersion) {

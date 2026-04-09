@@ -5,6 +5,8 @@ import 'coord_manager.dart';
 import 'strava_setting.dart';
 import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
+import 'igp_login_page.dart';
+import 'igp_manager.dart';
 import 'keep_login_page.dart';
 import 'keep_manager.dart';
 import 'app_state.dart';
@@ -178,6 +180,56 @@ class SettingsPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const OneLapLoginPage(),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: Listenable.merge([IGPManager(), LocaleManager()]),
+            builder: (context, _) {
+              final isConnected = IGPManager().username != null;
+              final subtitle = isConnected
+                  ? IGPManager().username!
+                  : AppLocalizations.of(context)!.thirdSyncSubtitle(
+                      AppLocalizations.of(context)!.iGPS,
+                      AppLocalizations.of(context)!.ride,
+                    );
+
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.sync_rounded,
+                    color: Color(0xFFFC4C02),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!.thirdSyncTitle(AppLocalizations.of(context)!.iGPS),
+                  ),
+                  subtitle: Text(subtitle),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isConnected)
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
+                        ),
+                      if (isConnected) const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IGPLoginPage(),
                       ),
                     );
                   },

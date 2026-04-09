@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 // or just import the service. Importing is better.
 import 'keep_service.dart';
 import 'strava_service.dart';
+import 'extension.dart';
 import 'log_manager.dart';
 
 class KeepManager extends ChangeNotifier {
@@ -25,9 +26,21 @@ class KeepManager extends ChangeNotifier {
   String? _username;
   String? get username => _username;
 
+  String? _token;
+  int? _tokenExp;
+
   Future<void> init() async {
     _username = await _storage.read(key: 'keep_username');
+    _token = await _storage.read(key: 'keep_token');
+    _tokenExp = int.parse(await _storage.read(key: 'keep_token_exp') ?? "0");
     notifyListeners();
+  }
+
+  Future writeToken(String token) async {
+    _token = token;
+    await _storage.write(key: 'keep_token', value: _token);
+    _tokenExp = getJWTTOkenExp(_token!);
+    await _storage.write(key: 'keep_token_exp', value: _tokenExp!.toString());
   }
 
   Future<bool> login(String username, String password) async {
@@ -38,6 +51,7 @@ class KeepManager extends ChangeNotifier {
         await _storage.write(key: 'keep_username', value: username);
         await _storage.write(key: 'keep_password', value: password);
         _username = username;
+        await writeToken(result['token']);
 
         notifyListeners();
         return true;
@@ -52,7 +66,11 @@ class KeepManager extends ChangeNotifier {
   Future<void> logout() async {
     await _storage.delete(key: 'keep_username');
     await _storage.delete(key: 'keep_password');
+    await _storage.delete(key: 'keep_token');
+    await _storage.delete(key: 'keep_token_exp');
     _username = null;
+    _token = null;
+    _tokenExp = null;
     notifyListeners();
   }
 
@@ -65,23 +83,34 @@ class KeepManager extends ChangeNotifier {
     final sportType = "running";
     int syncedCount = 0;
     try {
+      final nowTime =
+          DateTime.now()
+              .add(const Duration(minutes: 5))
+              .millisecondsSinceEpoch ~/
+          1000;
       // 1. Get credentials
-      final username = await _storage.read(key: 'keep_username');
-      final password = await _storage.read(key: 'keep_password');
+      if (_token != null && _tokenExp != null && _tokenExp! > nowTime) {
+        _service.token = _token!;
+      } else {
+        // 1. Get credentials
+        final username = await _storage.read(key: 'keep_username');
+        final password = await _storage.read(key: 'keep_password');
 
-      if (username == null || password == null) {
-        LogManager().addLog("Keep Sync Skipped: No credentials.");
-        throw Exception("No credentials found. Please login again.");
-      }
+        if (username == null || password == null) {
+          LogManager().addLog("Keep Sync Skipped: No credentials.");
+          throw Exception("No credentials found. Please login again.");
+        }
 
-      // 2. Login
-      LogManager().addLog("Keep Sync: Logging in...");
-      final loginResult = await _service.login(username, password);
-      if (loginResult['success'] != true) {
-        LogManager().addLog("Keep Sync Failed: Login error.");
-        throw Exception(
-          "Login failed: ${loginResult['msg'] ?? 'Unknown error'}",
-        );
+        // 2. Login
+        LogManager().addLog("Keep Sync: Logging in...");
+        final loginResult = await _service.login(username, password);
+        if (loginResult['success'] != true) {
+          LogManager().addLog("Keep Sync Failed: Login error.");
+          throw Exception(
+            "Login failed: ${loginResult['msg'] ?? 'Unknown error'}",
+          );
+        }
+        await writeToken(loginResult['token']);
       }
 
       // 3. Fetch list

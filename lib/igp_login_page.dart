@@ -3,17 +3,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'app_state.dart';
 import 'extension.dart';
-import 'keep_manager.dart';
+import 'igp_manager.dart';
 import 'l10n/generated/app_localizations.dart';
 
-class KeepLoginPage extends StatefulWidget {
-  const KeepLoginPage({super.key});
+class IGPLoginPage extends StatefulWidget {
+  const IGPLoginPage({super.key});
 
   @override
-  State<KeepLoginPage> createState() => _KeepLoginPageState();
+  State<IGPLoginPage> createState() => _IGPLoginPageState();
 }
 
-class _KeepLoginPageState extends State<KeepLoginPage> {
+class _IGPLoginPageState extends State<IGPLoginPage> {
   final AppState appState = GetIt.I<AppState>();
   final _formKey = GlobalKey<FormState>();
   DateTime? _lastSyncDate;
@@ -22,7 +22,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
-  final KeepManager _manager = KeepManager();
+  final IGPManager _manager = IGPManager();
 
   @override
   void initState() {
@@ -33,7 +33,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
 
   Future<void> _initDate() async {
     final prefs = await SharedPreferences.getInstance();
-    final lastSyncTime = prefs.getInt('keep_last_sync_time');
+    final lastSyncTime = prefs.getInt('igp_last_sync_time');
 
     if (mounted) {
       setState(() {
@@ -82,7 +82,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
           context.showToast(
             AppLocalizations.of(
               context,
-            )!.loginSuccess(AppLocalizations.of(context)!.keep),
+            )!.loginSuccess(AppLocalizations.of(context)!.iGPS),
           );
         }
       });
@@ -108,7 +108,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
         final prefs = await SharedPreferences.getInstance();
         final nowTime = DateTime.now();
         await prefs.setInt(
-          'keep_last_sync_time',
+          'igp_last_sync_time',
           (nowTime.millisecondsSinceEpoch ~/ 1000),
         );
         setState(() {
@@ -188,7 +188,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.thirdLoginTitle(l10n.keep))),
+      appBar: AppBar(title: Text(l10n.thirdLoginTitle(l10n.iGPS))),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -197,14 +197,14 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                l10n.thirdLoginDescription(l10n.keep, l10n.run),
+                l10n.thirdLoginDescription(l10n.iGPS, l10n.ride),
                 style: TextStyle(fontSize: 16, color: theme.hintColor),
               ),
               const SizedBox(height: 32),
               TextFormField(
                 controller: _usernameController,
                 decoration: InputDecoration(
-                  labelText: l10n.phoneLabel,
+                  labelText: l10n.accountLabel,
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.person_outline),
                 ),

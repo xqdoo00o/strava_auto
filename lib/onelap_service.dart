@@ -18,6 +18,9 @@ class OneLapService {
   static const String _secretKey = 'fe9f8382418fcdeb136461cac6acae7b';
 
   String? _token;
+  set token(String value) {
+    _token = value;
+  }
 
   bool get isLoggedIn => _token != null;
 
@@ -55,18 +58,6 @@ class OneLapService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // The API returns a JSON array or object? User example says: JSONObject loginData = data.getJSONObject(0);
-        // But user provided Java snippet: `JSONObject loginData = data.getJSONObject(0);` implies `data` is an array?
-        // Wait, user provided snippet: `String loginJson = HttpClientUtil.doPostJson(...)`
-        // Then `JSONObject loginData = data.getJSONObject(0);` - this part is a bit ambiguous in user's text ("解析登录返回的数据").
-        // Usually such APIs return {code: 0, msg: "success", data: [...]} or just [...]
-        // I'll assume standard response wrapper or direct array based on user's "data.getJSONObject(0)".
-
-        // Let's print response body for debugging if we could, but here I have to implement based on assumption.
-        // Assuming response structure: { code: 0, data: [{ token: ..., refresh_token: ..., userinfo: { uid: ... } }] }
-        // OR directly [{ token: ... }]
-
-        // Safest approach: check type of `data`.
 
         dynamic responseData = data;
         if (data is Map && data.containsKey('data')) {
@@ -120,11 +111,12 @@ class OneLapService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map && data.containsKey('data')) {
-          final list = data['data']['list'] as List;
-          activities.addAll(
-            list.map((e) => e as Map<String, dynamic>).toList(),
-          );
-          hasMore = data['data']['pagination']['has_more'] ?? false;
+          final rawData = data['data'];
+          if (rawData == null) break;
+          final list = (rawData['list'] as List?) ?? [];
+          activities.addAll(list.map((e) => e as Map<String, dynamic>));
+          hasMore = rawData['pagination']['has_more'] ?? false;
+          if (hasMore) page++;
         }
       } else {
         throw Exception('Failed to get activities: ${response.statusCode}');

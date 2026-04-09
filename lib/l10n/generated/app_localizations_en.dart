@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get oneLap => 'OneLap';
 
   @override
+  String get iGPS => 'iGPSPORT';
+
+  @override
   String get keep => 'Keep';
 
   @override

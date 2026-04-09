@@ -22,6 +22,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  final OneLapManager _manager = OneLapManager();
 
   @override
   void initState() {
@@ -48,11 +49,11 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
   }
 
   Future<void> _loadCredentials() async {
-    await OneLapManager().init();
+    await _manager.init();
     if (mounted) {
       setState(() {
-        if (OneLapManager().username != null) {
-          _usernameController.text = OneLapManager().username!;
+        if (_manager.username != null) {
+          _usernameController.text = _manager.username!;
         }
       });
     }
@@ -66,7 +67,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
       _errorMessage = null;
     });
 
-    final success = await OneLapManager().login(
+    final success = await _manager.login(
       _usernameController.text,
       _passwordController.text,
     );
@@ -101,7 +102,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
     context.showToast(l10n.syncingMessage);
 
     try {
-      final syncedCount = await OneLapManager().syncNow(_lastSyncDate);
+      final syncedCount = await _manager.syncNow(_lastSyncDate);
       if (mounted) {
         context.showToast(l10n.syncSuccessMessage(syncedCount));
         final prefs = await SharedPreferences.getInstance();
@@ -250,13 +251,13 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
-                        OneLapManager().username != null
+                        _manager.username != null
                             ? l10n.reconnectButton
                             : l10n.connectSyncButton,
                       ),
               ),
               const SizedBox(height: 16),
-              if (OneLapManager().username != null) ...[
+              if (_manager.username != null) ...[
                 ElevatedButton.icon(
                   onPressed: () => _pickDate(context),
                   icon: Icon(Icons.calendar_today),
@@ -300,7 +301,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () async {
-                    await OneLapManager().logout();
+                    await _manager.logout();
                     setState(() {
                       _usernameController.clear();
                       _passwordController.clear();

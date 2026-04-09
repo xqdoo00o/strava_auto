@@ -1,4 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+
+int getJWTTOkenExp(String token) {
+  try {
+    final payload = token.split('.').reversed.elementAt(1);
+    final data = jsonDecode(
+      utf8.decode(base64Decode(base64.normalize(payload))),
+    );
+    return data['exp'] ?? 0;
+  } catch (e) {
+    return 0;
+  }
+}
 
 extension SnackBarExtension on BuildContext {
   void showToast(

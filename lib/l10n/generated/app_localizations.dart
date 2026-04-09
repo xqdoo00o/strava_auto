@@ -260,6 +260,12 @@ abstract class AppLocalizations {
   /// **'OneLap'**
   String get oneLap;
 
+  /// No description provided for @iGPS.
+  ///
+  /// In en, this message translates to:
+  /// **'iGPSPORT'**
+  String get iGPS;
+
   /// No description provided for @keep.
   ///
   /// In en, this message translates to:

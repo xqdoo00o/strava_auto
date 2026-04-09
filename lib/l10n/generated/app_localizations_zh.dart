@@ -90,6 +90,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get oneLap => '顽鹿';
 
   @override
+  String get iGPS => '迹驰';
+
+  @override
   String get keep => 'Keep';
 
   @override

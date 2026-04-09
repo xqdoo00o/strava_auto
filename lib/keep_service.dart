@@ -15,6 +15,11 @@ class KeepService {
   static const String _activityDataUrl = "https://api.gotokeep.com/pd/v3/";
 
   String? _token;
+  set token(String value) {
+    _token = value;
+    headers['Authorization'] = 'Bearer $_token';
+  }
+
   int timestampThresholdInDecisecond = 3600000;
   final cipher = PaddedBlockCipherImpl(
     PKCS7Padding(),
@@ -86,9 +91,11 @@ class KeepService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map && data.containsKey('data')) {
-          final records = data['data']['records'] as List;
+          final rawData = data['data'];
+          if (rawData == null) break;
+          final records = (rawData['records'] as List?) ?? [];
           for (var record in records) {
-            final logs = record['logs'] as List;
+            final logs = (record['logs'] as List?) ?? [];
             for (var log in logs) {
               final stats = log['stats'] as Map<String, dynamic>;
               if (stats['isDoubtful'] == false && stats['startTime'] != null) {
@@ -102,7 +109,7 @@ class KeepService {
               }
             }
           }
-          lastDate = data['data']['lastTimestamp'];
+          lastDate = rawData['lastTimestamp'];
           await Future.delayed(Duration(seconds: 1)); // spider rule
           if (lastDate == 0) break;
         } else {
