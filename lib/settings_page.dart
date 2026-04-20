@@ -341,7 +341,7 @@ class SettingsPage extends StatelessWidget {
                   trailing: const Icon(Icons.open_in_new, size: 16),
                   onTap: () {
                     launchUrl(
-                      Uri.parse("https://github.com/xqdoo00o/starva_auto"),
+                      Uri.parse("https://github.com/xqdoo00o/strava_auto"),
                       mode: LaunchMode.externalApplication,
                     );
                   },

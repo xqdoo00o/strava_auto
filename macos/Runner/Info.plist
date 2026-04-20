@@ -9,7 +9,7 @@
 			<string>com.upstrava</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>starvaauto</string>
+				<string>stravaauto</string>
 			</array>
 		</dict>
 	</array>

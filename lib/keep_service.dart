@@ -13,6 +13,7 @@ class KeepService {
   static const String _activityIdsUrl =
       "https://api.gotokeep.com/pd/v3/stats/detail?dateUnit=all";
   static const String _activityDataUrl = "https://api.gotokeep.com/pd/v3/";
+  static const double _alpha = 0.3;
 
   String? _token;
   set token(String value) {
@@ -318,6 +319,8 @@ class KeepService {
                     builder.element(
                       'Track',
                       nest: () {
+                        double? smoothCadence;
+                        int? initStep;
                         for (int i = 0; i < runPointsData.length; i++) {
                           final point = runPointsData[i];
                           final timeStamp = DateTime.fromMillisecondsSinceEpoch(
@@ -378,38 +381,42 @@ class KeepService {
                                     step > 0 &&
                                     duration != null &&
                                     duration > 0) {
-                                  if (duration <= 10) {
-                                    final cadence = (step / (duration / 60) / 2)
-                                        .round();
-                                    builder.element(
-                                      'Cadence',
-                                      nest: cadence.toString(),
-                                    );
-                                  } else {
-                                    final prevTime = duration - 4;
-                                    num prevStep = 0;
-                                    num prevDuration = 0;
-                                    for (int j = i - 1; j >= 0; j--) {
-                                      final nowDuration =
-                                          runPointsData[j]['currentTotalDuration'];
-                                      if (nowDuration != null &&
-                                          nowDuration < prevTime) {
-                                        prevDuration = nowDuration;
-                                        prevStep =
-                                            runPointsData[j]['currentTotalSteps'] ??
-                                            0;
-                                        break;
+                                  initStep ??= step;
+                                  if ((step - initStep) > 5) {
+                                    late double rawCadence;
+                                    if (duration <= 10) {
+                                      rawCadence = (step / (duration / 60) / 2);
+                                    } else {
+                                      final prevTime = duration - 10;
+                                      num prevStep = 0;
+                                      num prevDuration = 0;
+                                      for (int j = i - 1; j >= 0; j--) {
+                                        final nowDuration =
+                                            runPointsData[j]['currentTotalDuration'];
+                                        if (nowDuration != null &&
+                                            nowDuration < prevTime) {
+                                          prevDuration = nowDuration;
+                                          prevStep =
+                                              runPointsData[j]['currentTotalSteps'] ??
+                                              0;
+                                          break;
+                                        }
                                       }
+                                      rawCadence =
+                                          ((step - prevStep) /
+                                          ((duration - prevDuration) / 60) /
+                                          2);
                                     }
-                                    final cadence =
-                                        ((step - prevStep) /
-                                                ((duration - prevDuration) /
-                                                    60) /
-                                                2)
-                                            .round();
+                                    if (smoothCadence == null) {
+                                      smoothCadence = rawCadence;
+                                    } else {
+                                      smoothCadence =
+                                          _alpha * rawCadence +
+                                          (1 - _alpha) * smoothCadence!;
+                                    }
                                     builder.element(
                                       'Cadence',
-                                      nest: cadence.toString(),
+                                      nest: smoothCadence!.round().toString(),
                                     );
                                   }
                                 }

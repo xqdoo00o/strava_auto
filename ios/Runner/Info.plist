@@ -9,7 +9,7 @@
 			<string>com.upstrava</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>starvaauto</string>
+				<string>stravaauto</string>
 			</array>
 		</dict>
 	</array>
@@ -76,7 +76,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>starva_auto</string>
+	<string>strava_auto</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

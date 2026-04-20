@@ -10,7 +10,7 @@ class StravaService {
   static const String _authUrl = 'https://www.strava.com/oauth/authorize';
   static const String _tokenUrl = 'https://www.strava.com/oauth/token';
   static const String _uploadUrl = 'https://www.strava.com/api/v3/uploads';
-  static const String _redirectUri = 'starvaauto://localhost';
+  static const String _redirectUri = 'stravaauto://localhost';
   final storage = const FlutterSecureStorage();
   String? clientId;
   String? clientSecret;

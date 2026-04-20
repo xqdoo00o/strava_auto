@@ -28,7 +28,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="starvaauto" android:host="localhost" />
+                <data android:scheme="stravaauto" android:host="localhost" />
             </intent-filter>
             
             <!-- Handle shared files (ACTION_SEND) -->

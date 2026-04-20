@@ -79,6 +79,7 @@ class _KeepLoginPageState extends State<KeepLoginPage> {
           _errorMessage = AppLocalizations.of(context)!.loginFailed;
         } else {
           // Success
+          _passwordController.clear();
           context.showToast(
             AppLocalizations.of(
               context,

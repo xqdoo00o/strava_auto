@@ -24,6 +24,7 @@ import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:get_it/get_it.dart';
+import 'package:win32_registry/win32_registry.dart';
 
 final getIt = GetIt.instance;
 
@@ -168,7 +169,7 @@ class UpstraApp extends StatelessWidget {
             // If this is the auth redirect, show a transient loading page instead of pushing a new DashboardPage
             final routeName = settings.name?.toLowerCase() ?? '';
             if (routeName.contains('code=') ||
-                routeName.startsWith('starvaauto://')) {
+                routeName.startsWith('stravaauto://')) {
               return MaterialPageRoute(
                 builder: (context) => const AuthCallbackPage(),
               );
@@ -304,14 +305,32 @@ class _DashboardPageState extends State<DashboardPage>
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null &&
           initialUri.queryParameters.containsKey('code')) {
-        _addLog("初始链接捕获: $initialUri");
         _handleAuthCallback(initialUri);
       }
     } else {
+      if (Platform.isWindows) {
+        final scheme = 'stravaauto';
+        String appPath = Platform.resolvedExecutable;
+
+        String protocolRegKey = 'Software\\Classes\\$scheme';
+        RegistryValue protocolRegValue = RegistryValue.string(
+          'URL Protocol',
+          '',
+        );
+        String protocolCmdRegKey = 'shell\\open\\command';
+        RegistryValue protocolCmdRegValue = RegistryValue.string(
+          '',
+          '"$appPath" "%1"',
+        );
+
+        final regKey = Registry.currentUser.createKey(protocolRegKey);
+        regKey.createValue(protocolRegValue);
+        regKey.createKey(protocolCmdRegKey).createValue(protocolCmdRegValue);
+      }
       _sub = _appLinks.uriLinkStream.listen(
         (uri) {
           _addLog("Received link: $uri");
-          if (uri.scheme == 'starvaauto') {
+          if (uri.scheme == 'stravaauto') {
             _handleAuthCallback(uri);
           } else if (uri.scheme == 'file') {
             // Handle file open request (iOS "Open with...")
