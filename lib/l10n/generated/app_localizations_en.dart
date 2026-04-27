@@ -75,6 +75,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Strava API changes: Please reconnect your Strava account.';
 
   @override
+  String get noValidFiles => 'No Vaild Files Found';
+
+  @override
   String get privacyPolicyTitle => 'Privacy Policy';
 
   @override

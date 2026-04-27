@@ -19,12 +19,30 @@
 			<key>CFBundleTypeName</key>
 			<string>FIT File</string>
 			<key>LSHandlerRank</key>
-			<string>Alternate</string>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.garmin.fit</string>
-				<string>public.data</string>
-				<string>public.content</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Training Center XML</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+            	<string>com.garmin.tcx</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>GPS Exchange Format</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.topografix.gpx</string>
 			</array>
 		</dict>
 	</array>
@@ -52,6 +70,53 @@
 			</dict>
 		</dict>
 	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Training Center XML (TCX)</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.garmin.tcx</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>tcx</string>
+					<string>TCX</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/vnd.garmin.tcx+xml</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>GPS Exchange Format (GPX)</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.topografix.gpx</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gpx</string>
+					<string>GPX</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/gpx+xml</string>
+			</dict>
+		</dict>
+	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
@@ -60,10 +125,6 @@
 	<array>
 		<string>fetch</string>
 		<string>processing</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>workmanager.background.task</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

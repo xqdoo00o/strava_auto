@@ -20,6 +20,7 @@
   "run": "Run",
   "ride": "Ride",
   "stravaChangeTip": "Strava API changes: Please reconnect your Strava account.",
+  "noValidFiles": "No Vaild Files Found",
   "privacyPolicyTitle": "Privacy Policy",
   "agreeButton": "Agree",
   "disagreeButton": "Disagree",

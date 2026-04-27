@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'Strava API changes: Please reconnect your Strava account.'**
   String get stravaChangeTip;
 
+  /// No description provided for @noValidFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No Vaild Files Found'**
+  String get noValidFiles;
+
   /// No description provided for @privacyPolicyTitle.
   ///
   /// In en, this message translates to:

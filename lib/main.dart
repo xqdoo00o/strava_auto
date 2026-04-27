@@ -25,6 +25,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:get_it/get_it.dart';
 import 'package:win32_registry/win32_registry.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 
 final getIt = GetIt.instance;
 
@@ -241,6 +242,8 @@ class _DashboardPageState extends State<DashboardPage>
   // State
   final AppState _appState = GetIt.I<AppState>();
   bool _isUploading = false;
+  bool _isDragging = false;
+  final extensions = ['fit', 'tcx', 'gpx'];
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -337,11 +340,11 @@ class _DashboardPageState extends State<DashboardPage>
             try {
               final filePath = uri.toFilePath();
               final ext = getExtension(filePath);
-              if (ext == 'fit' || ext == 'tcx' || ext == 'gpx') {
+              if (extensions.contains(ext)) {
                 _addLog("Detected file from link: $filePath");
                 // Delay slightly to ensure UI is ready if app was just launched
                 Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) _showUploadDialog(XFile(filePath));
+                  if (mounted) _showUploadDialog([XFile(filePath)]);
                 });
               } else {
                 _addLog(
@@ -482,8 +485,8 @@ class _DashboardPageState extends State<DashboardPage>
     for (var file in files) {
       _addLog("Checking file: ${file.path}");
       final ext = getExtension(file.path);
-      if (ext == 'fit' || ext == 'tcx' || ext == 'gpx') {
-        _showUploadDialog(XFile(file.path));
+      if (extensions.contains(ext)) {
+        _showUploadDialog([XFile(file.path)]);
         break;
       } else {
         _addLog(
@@ -496,21 +499,24 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _pickAndUploadFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['fit', 'tcx', 'gpx'],
+        allowedExtensions: extensions,
       );
       if (result != null && result.xFiles.isNotEmpty) {
-        _showUploadDialog(result.xFiles.single);
+        _showUploadDialog(result.xFiles);
       }
     } catch (e) {
       _addLog("File picker error: $e", isError: true);
     }
   }
 
-  void _showUploadDialog(XFile file) {
+  void _showUploadDialog(List<XFile> files) {
     if (!_appState.isConnected) {
-      _addLog("Please connect to Strava to upload ${file.name}", isError: true);
+      _addLog(
+        "Please connect to Strava to upload ${files.first.name}",
+        isError: true,
+      );
       context.showToast(AppLocalizations.of(context)!.pleaseConnectFirst);
       return;
     }
@@ -556,24 +562,35 @@ class _DashboardPageState extends State<DashboardPage>
                     color: theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.fitness_center,
-                        color: Color(0xFFFC4C02),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          file.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
+                  child: Column(
+                    children: files
+                        .map(
+                          (file) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4.0,
+                            ), // 文件之间的间距
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.fitness_center,
+                                  color: Color(0xFFFC4C02),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    file.name,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                        )
+                        .toList(),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -632,9 +649,11 @@ class _DashboardPageState extends State<DashboardPage>
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(context); // Close dialog first
-                          _uploadFile(file, tempSportType);
+                          for (var file in files) {
+                            await _uploadFile(file, tempSportType);
+                          }
                         },
                         child: Text(
                           AppLocalizations.of(context)!.uploadNowButton,
@@ -910,61 +929,81 @@ class _DashboardPageState extends State<DashboardPage>
       );
     }
 
-    return GestureDetector(
-      onTap: _pickAndUploadFile,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: theme.dividerColor.withValues(alpha: 0.5),
-            style: BorderStyle.none,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return DropTarget(
+      onDragDone: (detail) async {
+        final validFiles = detail.files.where((file) {
+          return extensions.contains(getExtension(file.name));
+        }).toList();
+        if (validFiles.isEmpty) {
+          _addLog("No valid files dropped.", isError: true);
+          context.showToast(
+            AppLocalizations.of(context)!.noValidFiles,
+            backgroundColor: Colors.red,
+          );
+          return;
+        }
+        _showUploadDialog(validFiles);
+      },
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: GestureDetector(
+        onTap: _pickAndUploadFile,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: _isDragging ? theme.focusColor : theme.cardColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.dividerColor.withValues(alpha: 0.5),
+              style: BorderStyle.none,
             ),
-          ],
-        ),
-        child: CustomPaint(
-          painter: DashedBorderPainter(
-            color: theme.dividerColor,
-            strokeWidth: 2,
-            gap: 10,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: theme.scaffoldBackgroundColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 40,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                AppLocalizations.of(context)!.tapToSelect,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppLocalizations.of(context)!.orShare,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.hintColor,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
+          ),
+          child: CustomPaint(
+            painter: DashedBorderPainter(
+              color: theme.dividerColor,
+              strokeWidth: 2,
+              gap: _isDragging ? 0 : 10,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _isDragging
+                        ? theme.focusColor
+                        : theme.scaffoldBackgroundColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 40,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  AppLocalizations.of(context)!.tapToSelect,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context)!.orShare,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1029,7 +1068,11 @@ class DashedBorderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.gap != gap;
+  }
 }
 
 class CircularIntervalList<T> {

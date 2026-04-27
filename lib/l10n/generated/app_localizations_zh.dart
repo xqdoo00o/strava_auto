@@ -72,6 +72,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stravaChangeTip => 'Strava API 变更，请重新连接 Strava 账号。';
 
   @override
+  String get noValidFiles => '未发现可用文件';
+
+  @override
   String get privacyPolicyTitle => '隐私政策';
 
   @override
