@@ -20,11 +20,12 @@ import 'coord_fixer.dart';
 import 'strava_setting.dart';
 import 'app_state.dart';
 import 'extension.dart';
-import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
+import "stub_logic.dart"
+    if (dart.library.js_interop) "web_logic.dart"
+    if (dart.library.io) "windows_logic.dart";
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:get_it/get_it.dart';
-import 'package:win32_registry/win32_registry.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 
 final getIt = GetIt.instance;
@@ -243,6 +244,7 @@ class _DashboardPageState extends State<DashboardPage>
   final AppState _appState = GetIt.I<AppState>();
   bool _isUploading = false;
   bool _isDragging = false;
+  final bool _isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
   final extensions = ['fit', 'tcx', 'gpx'];
 
   late AnimationController _pulseController;
@@ -312,23 +314,7 @@ class _DashboardPageState extends State<DashboardPage>
       }
     } else {
       if (Platform.isWindows) {
-        final scheme = 'stravaauto';
-        String appPath = Platform.resolvedExecutable;
-
-        String protocolRegKey = 'Software\\Classes\\$scheme';
-        RegistryValue protocolRegValue = RegistryValue.string(
-          'URL Protocol',
-          '',
-        );
-        String protocolCmdRegKey = 'shell\\open\\command';
-        RegistryValue protocolCmdRegValue = RegistryValue.string(
-          '',
-          '"$appPath" "%1"',
-        );
-
-        final regKey = Registry.currentUser.createKey(protocolRegKey);
-        regKey.createValue(protocolRegValue);
-        regKey.createKey(protocolCmdRegKey).createValue(protocolCmdRegValue);
+        registerCustomProtocol();
       }
       _sub = _appLinks.uriLinkStream.listen(
         (uri) {
@@ -997,7 +983,9 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  AppLocalizations.of(context)!.orShare,
+                  _isMobilePlatform
+                      ? AppLocalizations.of(context)!.orShare
+                      : AppLocalizations.of(context)!.orDrag,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.hintColor,
                   ),

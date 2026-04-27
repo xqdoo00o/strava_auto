@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'or share from other apps'**
   String get orShare;
 
+  /// No description provided for @orDrag.
+  ///
+  /// In en, this message translates to:
+  /// **'or drop files here'**
+  String get orDrag;
+
   /// No description provided for @syncNowButton.
   ///
   /// In en, this message translates to:

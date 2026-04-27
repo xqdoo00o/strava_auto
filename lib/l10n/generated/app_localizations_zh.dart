@@ -285,6 +285,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get orShare => '或从其他应用分享';
 
   @override
+  String get orDrag => '或将文件拖拽到这里';
+
+  @override
   String get syncNowButton => '立即同步';
 
   @override

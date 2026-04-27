@@ -1,5 +1,6 @@
-void clearURLParameter() {
-}
+void clearURLParameter() {}
 String getRedirectURI() {
   return '';
 }
+
+void registerCustomProtocol() {}

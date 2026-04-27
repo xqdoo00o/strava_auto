@@ -8,3 +8,5 @@ void clearURLParameter() {
 String getRedirectURI() {
   return web.window.location.origin + web.window.location.pathname;
 }
+
+void registerCustomProtocol() {}

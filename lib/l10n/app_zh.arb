@@ -85,6 +85,7 @@
   "uploading": "正在上传...",
   "tapToSelect": "点击选择 .FIT .TCX .GPX文件",
   "orShare": "或从其他应用分享",
+  "orDrag": "或将文件拖拽到这里",
   "syncNowButton": "立即同步",
   "syncingMessage": "正在同步...",
   "syncSuccessMessage": "同步完成！已同步 {count} 个活动。",

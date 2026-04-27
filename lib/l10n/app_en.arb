@@ -113,6 +113,7 @@
   "uploading": "Uploading...",
   "tapToSelect": "Tap to Select .FIT .TCX .GPX File",
   "orShare": "or share from other apps",
+  "orDrag": "or drop files here",
   "syncNowButton": "Sync Now",
   "syncingMessage": "Syncing...",
   "syncSuccessMessage": "Sync completed! {count} activities synced.",

@@ -288,6 +288,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orShare => 'or share from other apps';
 
   @override
+  String get orDrag => 'or drop files here';
+
+  @override
   String get syncNowButton => 'Sync Now';
 
   @override
