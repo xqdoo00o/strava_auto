@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'extension.dart';
@@ -8,7 +9,7 @@ import 'log_manager.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class AppUpgrader {
-  static const String currentVersion = "0.9.1";
+  static const String currentVersion = "0.9.5";
   static const String repoUrl =
       "https://api.github.com/repos/xqdoo00o/strava_auto/releases/latest";
   static int compareVersion(String newVersion) {
@@ -28,7 +29,7 @@ class AppUpgrader {
   }
 
   static Future<void> checkUpgrade(BuildContext context) async {
-    if (!Platform.isAndroid) {
+    if (kIsWeb || !Platform.isAndroid) {
       return;
     }
     try {

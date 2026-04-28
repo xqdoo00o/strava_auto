@@ -3,13 +3,16 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:get_it/get_it.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:app_links/app_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/generated/app_localizations.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
@@ -23,10 +26,7 @@ import 'extension.dart';
 import "stub_logic.dart"
     if (dart.library.js_interop) "web_logic.dart"
     if (dart.library.io) "windows_logic.dart";
-import 'package:flutter/foundation.dart';
-import 'package:cross_file/cross_file.dart';
-import 'package:get_it/get_it.dart';
-import 'package:desktop_drop/desktop_drop.dart';
+import 'l10n/generated/app_localizations.dart';
 
 final getIt = GetIt.instance;
 
@@ -244,7 +244,8 @@ class _DashboardPageState extends State<DashboardPage>
   final AppState _appState = GetIt.I<AppState>();
   bool _isUploading = false;
   bool _isDragging = false;
-  final bool _isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  final bool _isMobilePlatform =
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
   final extensions = ['fit', 'tcx', 'gpx'];
 
   late AnimationController _pulseController;
