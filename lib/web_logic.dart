@@ -9,4 +9,4 @@ String getRedirectURI() {
   return web.window.location.origin + web.window.location.pathname;
 }
 
-void registerCustomProtocol() {}
+Future<void> registerDesktopCustomProtocol() async {}

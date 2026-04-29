@@ -3,4 +3,4 @@ String getRedirectURI() {
   return '';
 }
 
-void registerCustomProtocol() {}
+Future<void> registerDesktopCustomProtocol() async {}

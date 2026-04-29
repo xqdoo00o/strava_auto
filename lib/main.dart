@@ -25,7 +25,7 @@ import 'app_state.dart';
 import 'extension.dart';
 import "stub_logic.dart"
     if (dart.library.js_interop) "web_logic.dart"
-    if (dart.library.io) "windows_logic.dart";
+    if (dart.library.io) "native_logic.dart";
 import 'l10n/generated/app_localizations.dart';
 
 final getIt = GetIt.instance;
@@ -314,9 +314,7 @@ class _DashboardPageState extends State<DashboardPage>
         _handleAuthCallback(initialUri);
       }
     } else {
-      if (Platform.isWindows) {
-        registerCustomProtocol();
-      }
+      registerDesktopCustomProtocol();
       _sub = _appLinks.uriLinkStream.listen(
         (uri) {
           _addLog("Received link: $uri");
@@ -428,7 +426,11 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       final url = _stravaService.getAuthorizationUrl();
       if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+          webOnlyWindowName: '_self',
+        );
         _addLog("Launched Strava login...");
       } else {
         _addLog("Could not launch browser.", isError: true);
