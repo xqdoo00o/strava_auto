@@ -6,8 +6,9 @@ import 'package:xml/xml.dart';
 import 'package:cross_file/cross_file.dart';
 
 extension GpsFormatter on double {
+  static final Pattern _trimZeros = RegExp(r'\.?0+$');
   String toGpsString() {
-    return toStringAsFixed(10).replaceFirst(RegExp(r'\.?0+$'), '');
+    return toStringAsFixed(10).replaceFirst(_trimZeros, '');
   }
 }
 
