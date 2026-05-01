@@ -8,13 +8,17 @@ import 'coord_fixer.dart';
 import 'package:cross_file/cross_file.dart';
 
 class OneLapService {
-  static const String _loginUrl = 'https://www.onelap.cn/api/login';
-  static const String _activityListUrl =
-      'https://otm.onelap.cn/api/otm/ride_record/list';
+  static const String _loginUrl = kIsWeb
+      ? '/proxy/onelap/login'
+      : 'https://www.onelap.cn/api/login';
+  static const String _baseUrl = kIsWeb
+      ? '/proxy/onelap/otm'
+      : 'https://otm.onelap.cn';
+  static const String _activityListUrl = '$_baseUrl/api/otm/ride_record/list';
   static const String _activityListDetailUrl =
-      'https://otm.onelap.cn/api/otm/ride_record/analysis/';
+      '$_baseUrl/api/otm/ride_record/analysis/';
   static const String _otmUrl =
-      'https://otm.onelap.cn/api/otm/ride_record/analysis/fit_content/';
+      '$_baseUrl/api/otm/ride_record/analysis/fit_content/';
   static const String _secretKey = 'fe9f8382418fcdeb136461cac6acae7b';
 
   String? _token;

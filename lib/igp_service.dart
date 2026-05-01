@@ -6,12 +6,15 @@ import 'package:cross_file/cross_file.dart';
 // import 'coord_fixer.dart';
 
 class IGPService {
-  static const String _baseUrl = 'https://prod.zh.igpsport.com/service/';
-  static const String _loginUrl = '${_baseUrl}auth/account/login';
+  static const String _baseUrl = kIsWeb
+      ? '/proxy/igp/service'
+      : 'https://prod.zh.igpsport.com/service';
+  static const String _loginUrl = '$_baseUrl/auth/account/login';
   static const String _activityBaseUrl =
-      '${_baseUrl}web-gateway/web-analyze/activity/';
+      '$_baseUrl/web-gateway/web-analyze/activity/';
   static const String _activityListUrl = '${_activityBaseUrl}queryMyActivity';
   static const String _downloadUrl = '${_activityBaseUrl}getDownloadUrl/';
+  static const String _webDownloadUrl = '/proxy/igp/download';
 
   String? _token;
   set token(String value) {
@@ -113,7 +116,9 @@ class IGPService {
         if (data is Map && data.containsKey('data')) {
           final durl = (data['data'] as String?) ?? '';
           if (durl.isNotEmpty) {
-            activity['downloadUrl'] = durl;
+            activity['downloadUrl'] = kIsWeb
+                ? "$_webDownloadUrl?url=${Uri.encodeComponent(base64Encode(utf8.encode(durl)))}"
+                : durl;
             if (activity['title'] != null) {
               activity['fileName'] = activity['title'].isNotEmpty
                   ? '${activity['startTime']}${activity['title']}.fit'

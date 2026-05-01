@@ -7,31 +7,38 @@
 *   **运动文件上传**：支持手动选择或通过系统分享直接上传 .fit .tcx .gpx 文件到 Strava，支持修改运动类型（骑行/跑步）。
 *   **Strava API**：内置 Strava 授权，无需手动填写 Token。
 *   **坐标纠偏**：国标GCJ-02坐标系的文件可转换为Strava支持的通用标准WGS84坐标系。
-*   **顽鹿自动同步**：登录顽鹿账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
-*   **iGPSPORT自动同步**：登录iGPSPORT账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
-*   **Keep自动同步**：登录Keep账号后，可手动同步跑步活动到Strava，支持筛选日期同步（小米/华为/OPPO运动健康数据->Keep->Strava）。
-*   **多平台/语言支持**：适配 iOS/Android, Windows/macOS，支持简体中文和英文。
+*   **顽鹿同步**：登录顽鹿账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
+*   **iGPSPORT同步**：登录iGPSPORT账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
+*   **Keep同步**：登录Keep账号后，可手动同步跑步活动到Strava，支持筛选日期同步（小米/华为/OPPO运动健康数据->Keep->Strava）。
+*   **多平台/语言支持**：适配 iOS/Android, Windows/macOS/Web，支持简体中文和英文。
 *   **原生体验**：适配 iOS/Android 深色模式与系统交互。
 *   **数据安全**：凭证仅保存在设备本地。
 
 ## 注册 Strava API
 
-1. 登录 https://www.strava.com/settings/api, 并创建应用。
+1. 前往 https://www.strava.com/settings/api, 并创建应用。
 2. 复制 Client ID 和 Client Secret 填入 App 设置。
 
 ## 使用方式
 
 ### 安卓
 
-下载apk文件并安装，如无法打开Strava授权页，请尝试更改默认浏览器。
+下载 [`app-release.apk`](../../releases/latest/download/app-release.apk) 文件并安装，如无法打开Strava授权页，请尝试更改默认浏览器。
 
 ### iOS
 
-下载安装[AltStore](https://altstore.io/), 下载ipa文件并侧载，注意每七天需刷新证书。
+1. **安装环境**：前往 [AltStore 官网](https://altstore.io/) 下载并安装 AltServer。
+2. **侧载应用**：下载 [`Payload.ipa`](../../releases/latest/download/Payload.ipa) 文件，通过 AltStore 手机端选择该文件进行安装。
+3. **定期续签**：受限于个人证书，请**每 7 天**刷新一次证书。
+
+### Web
+
+1. **托管部署**：下载 [`web.zip`](../../releases/latest/download/web.zip) 文件，部署至 [Cloudflare Pages](https://pages.cloudflare.com/)，选择 **拖放文件**，将该文件拖入并部署Pages。
+3. **配置回调**：前往 [Strava API 设置](https://www.strava.com/settings/api)，将 **授权回调域** 更新为 `pages.dev` 或Pages绑定的自定义域。
 
 ### Windows
 
-下载zip文件并解压，双击exe文件运行。
+下载 [`Release.zip`](../../releases/latest/download/Release.zip) 文件并解压，双击exe文件运行。
 
 ## 免责声明
 

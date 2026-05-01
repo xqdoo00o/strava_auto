@@ -9,10 +9,13 @@ import 'coord_fixer.dart';
 import 'package:cross_file/cross_file.dart';
 
 class KeepService {
-  static const String _loginUrl = 'https://api.gotokeep.com/v1.1/users/login';
+  static const String _baseUrl = kIsWeb
+      ? '/proxy/keep'
+      : 'https://api.gotokeep.com';
+  static const String _loginUrl = '$_baseUrl/v1.1/users/login';
   static const String _activityIdsUrl =
-      "https://api.gotokeep.com/pd/v3/stats/detail?dateUnit=all";
-  static const String _activityDataUrl = "https://api.gotokeep.com/pd/v3/";
+      '$_baseUrl/pd/v3/stats/detail?dateUnit=all';
+  static const String _activityDataUrl = '$_baseUrl/pd/v3/';
   static const double _alpha = 0.3;
 
   String? _token;
