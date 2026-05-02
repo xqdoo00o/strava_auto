@@ -69,6 +69,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ride => '骑行';
 
   @override
+  String get stravaId => '客户 ID';
+
+  @override
+  String get stravaSecret => '客户端密钥';
+
+  @override
+  String get stravaLabel => '客户 ID/密钥';
+
+  @override
   String get stravaChangeTip => 'Strava API 变更，请重新连接 Strava 账号。';
 
   @override
@@ -285,7 +294,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get orShare => '或从其他应用分享';
 
   @override
-  String get orDrag => '或将文件拖拽到这里';
+  String get orDrag => '或将文件拖到这里';
 
   @override
   String get syncNowButton => '立即同步';

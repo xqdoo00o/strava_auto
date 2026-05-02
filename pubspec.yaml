@@ -1,7 +1,7 @@
 name: strava_auto
 description: "Strava Auto - Upload Tool for Strava"
 publish_to: 'none'
-version: 0.9.5+8
+version: 0.9.6+9
 
 environment:
   sdk: ^3.11.0

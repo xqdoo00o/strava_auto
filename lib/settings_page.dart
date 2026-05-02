@@ -94,7 +94,7 @@ class SettingsPage extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.api, color: Color(0xFFFC4C02)),
               title: Text("Strava API"),
-              subtitle: Text("Client ID/Secret"),
+              subtitle: Text(AppLocalizations.of(context)!.stravaLabel),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 final bool shouldDisconnect =

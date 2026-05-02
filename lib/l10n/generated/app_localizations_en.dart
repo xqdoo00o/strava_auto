@@ -71,6 +71,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ride => 'Ride';
 
   @override
+  String get stravaId => 'Client ID';
+
+  @override
+  String get stravaSecret => 'Client Secret';
+
+  @override
+  String get stravaLabel => 'Client ID/Secret';
+
+  @override
   String get stravaChangeTip =>
       'Strava API changes: Please reconnect your Strava account.';
 

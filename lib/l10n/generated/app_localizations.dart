@@ -218,6 +218,24 @@ abstract class AppLocalizations {
   /// **'Ride'**
   String get ride;
 
+  /// No description provided for @stravaId.
+  ///
+  /// In en, this message translates to:
+  /// **'Client ID'**
+  String get stravaId;
+
+  /// No description provided for @stravaSecret.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Secret'**
+  String get stravaSecret;
+
+  /// No description provided for @stravaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client ID/Secret'**
+  String get stravaLabel;
+
   /// No description provided for @stravaChangeTip.
   ///
   /// In en, this message translates to:
