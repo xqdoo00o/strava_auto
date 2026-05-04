@@ -19,6 +19,13 @@
 1. 前往 https://www.strava.com/settings/api, 并创建应用。
 2. 复制 客户 ID 和 客户端密钥 填入 App 设置。
 
+## 快速体验
+
+[在线演示地址](https://strava.a2o.cc/)
+
+- **说明**：使用前请将 [Strava API](https://www.strava.com/settings/api) 中 **授权回调域** 修改为 `strava.a2o.cc`，否则将无法连接 Strava。
+- **提示**：参考下方[使用方式](#使用方式)，建议自行部署使用，演示地址使用 [Web](#web) 方式部署。
+
 ## 使用方式
 
 ### 安卓
@@ -34,7 +41,7 @@
 ### Web
 
 1. **托管部署**：下载 [`web.zip`](../../releases/latest/download/web.zip) 文件，部署至 [Cloudflare Pages](https://pages.cloudflare.com/)，选择 **拖放文件**，将该文件拖入并部署Pages。
-3. **配置回调**：前往 [Strava API 设置](https://www.strava.com/settings/api)，将 **授权回调域** 更新为 `pages.dev` 或Pages绑定的自定义域。
+2. **配置回调**：前往 [Strava API](https://www.strava.com/settings/api)，将 **授权回调域** 修改为 `pages.dev` 或Pages绑定的自定义域。
 
 ### Windows
 
