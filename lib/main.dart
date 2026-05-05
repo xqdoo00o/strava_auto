@@ -245,7 +245,8 @@ class _DashboardPageState extends State<DashboardPage>
   bool _isUploading = false;
   bool _isDragging = false;
   final bool _isMobilePlatform =
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.android;
   final extensions = ['fit', 'tcx', 'gpx'];
 
   late AnimationController _pulseController;
@@ -664,7 +665,7 @@ class _DashboardPageState extends State<DashboardPage>
     XFile uploadFile = file;
 
     //iOS Sandboxing Fix: Copy file to app's temp directory
-    if (!kIsWeb && Platform.isIOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       try {
         final tempDir = await getTemporaryDirectory();
         final newPath = '${tempDir.path}/${file.name}';
@@ -985,12 +986,15 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  _isMobilePlatform
-                      ? AppLocalizations.of(context)!.orShare
-                      : AppLocalizations.of(context)!.orDrag,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor,
+                Visibility(
+                  visible: !(kIsWeb && _isMobilePlatform),
+                  child: Text(
+                    _isMobilePlatform
+                        ? AppLocalizations.of(context)!.orShare
+                        : AppLocalizations.of(context)!.orDrag,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
                   ),
                 ),
               ],

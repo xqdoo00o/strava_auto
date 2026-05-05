@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'app_state.dart';
 import 'extension.dart';
 import 'igp_manager.dart';
+import 'password_field.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class IGPLoginPage extends StatefulWidget {
@@ -217,20 +219,9 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              CustomPasswordField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.passwordLabel,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  return null;
-                },
+                labelText: l10n.passwordLabel,
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
@@ -251,10 +242,27 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(
-                        _manager.username != null
-                            ? l10n.reconnectButton
-                            : l10n.connectSyncButton,
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _manager.username != null
+                                ? Icons.refresh
+                                : Icons.login,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: kIsWeb ? 2.0 : 0.0,
+                            ),
+                            child: Text(
+                              _manager.username != null
+                                  ? l10n.reconnectButton
+                                  : l10n.connectSyncButton,
+                            ),
+                          ),
+                        ],
                       ),
               ),
               const SizedBox(height: 16),
@@ -262,14 +270,17 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
                 ElevatedButton.icon(
                   onPressed: () => _pickDate(context),
                   icon: Icon(Icons.calendar_today),
-                  label: Text(
-                    _lastSyncDate == null
-                        ? l10n.allActivities
-                        : "${_lastSyncDate!.toIso8601String().split('T')[0]} ${l10n.postActivities}",
+                  label: Padding(
+                    padding: EdgeInsets.only(bottom: kIsWeb ? 2.0 : 0.0),
+                    child: Text(
+                      _lastSyncDate == null
+                          ? l10n.allActivities
+                          : "${_lastSyncDate!.toIso8601String().split('T')[0]} ${l10n.postActivities}",
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.tertiary,
-                    foregroundColor: theme.colorScheme.onTertiary,
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
@@ -293,9 +304,14 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.sync),
+                            const Icon(Icons.sync, size: 20),
                             const SizedBox(width: 8),
-                            Text(l10n.syncNowButton),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: kIsWeb ? 2.0 : 0.0,
+                              ),
+                              child: Text(l10n.syncNowButton),
+                            ),
                           ],
                         ),
                 ),

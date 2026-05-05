@@ -23,12 +23,17 @@ class StravaConfigUtils {
           children: [
             TextField(
               controller: idController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.stravaId),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.stravaId,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: secretController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.stravaSecret),
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.stravaSecret,
+              ),
             ),
           ],
         ),

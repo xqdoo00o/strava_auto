@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +28,7 @@ class AppUpgrader {
   }
 
   static Future<void> checkUpgrade(BuildContext context) async {
-    if (kIsWeb || !Platform.isAndroid) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
     try {
