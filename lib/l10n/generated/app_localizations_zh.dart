@@ -69,6 +69,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ride => '骑行';
 
   @override
+  String get createStrava => '创建 API';
+
+  @override
   String get stravaId => '客户 ID';
 
   @override

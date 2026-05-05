@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'strava_service.dart';
 import 'l10n/generated/app_localizations.dart';
-import 'package:get_it/get_it.dart';
 
 class StravaConfigUtils {
   static Future<bool> showStravaConfigDialog(BuildContext context) async {
@@ -17,7 +18,27 @@ class StravaConfigUtils {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Strava API'),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Strava API'),
+            TextButton.icon(
+              onPressed: () async {
+                final Uri url = Uri.parse(
+                  'https://www.strava.com/settings/api',
+                );
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: Text(
+                AppLocalizations.of(context)!.createStrava,
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

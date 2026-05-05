@@ -71,6 +71,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ride => 'Ride';
 
   @override
+  String get createStrava => 'Create API';
+
+  @override
   String get stravaId => 'Client ID';
 
   @override

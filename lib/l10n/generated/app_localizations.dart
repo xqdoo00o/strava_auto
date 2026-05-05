@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'Ride'**
   String get ride;
 
+  /// No description provided for @createStrava.
+  ///
+  /// In en, this message translates to:
+  /// **'Create API'**
+  String get createStrava;
+
   /// No description provided for @stravaId.
   ///
   /// In en, this message translates to:

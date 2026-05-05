@@ -20,6 +20,7 @@
   "defaultStr": "默认",
   "run": "跑步",
   "ride": "骑行",
+  "createStrava": "创建 API",
   "stravaId": "客户 ID",
   "stravaSecret": "客户端密钥",
   "stravaLabel": "客户 ID/密钥",

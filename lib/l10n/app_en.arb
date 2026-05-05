@@ -19,6 +19,7 @@
   "defaultStr": "Default",
   "run": "Run",
   "ride": "Ride",
+  "createStrava": "Create API",
   "stravaId": "Client ID",
   "stravaSecret": "Client Secret",
   "stravaLabel": "Client ID/Secret",

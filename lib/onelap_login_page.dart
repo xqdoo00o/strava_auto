@@ -251,7 +251,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                                 : Icons.login,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Padding(
                             padding: EdgeInsets.only(
                               bottom: kIsWeb ? 2.0 : 0.0,
@@ -305,7 +305,7 @@ class _OneLapLoginPageState extends State<OneLapLoginPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(Icons.sync, size: 20),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Padding(
                               padding: EdgeInsets.only(
                                 bottom: kIsWeb ? 2.0 : 0.0,
