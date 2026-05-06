@@ -1,57 +1,81 @@
 # Strava Auto
 
-这是一个基于 Flutter 开发的 Strava 数据同步工具，旨在解决运动数据在不同平台间流转的难题。
+Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具，用来把分散在不同平台或文件中的运动记录更轻松地同步到 Strava。
 
-## ✨ 主要功能
+它支持手动上传运动文件，也支持从顽鹿，iGPSPORT，Keep 等平台拉取活动后同步到 Strava。凭证仅保存在本地设备，活动数据只会在你主动触发同步时上传。
 
-*   **运动文件上传**：支持手动选择或通过系统分享直接上传 .fit .tcx .gpx 文件到 Strava，支持修改运动类型（骑行/跑步）。
-*   **Strava API**：内置 Strava 授权，无需手动填写 Token。
-*   **坐标纠偏**：国标GCJ-02坐标系的文件可转换为Strava支持的通用标准WGS84坐标系。
-*   **顽鹿同步**：登录顽鹿账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
-*   **iGPSPORT同步**：登录iGPSPORT账号后，可手动同步骑行活动到Strava，支持筛选日期同步。
-*   **Keep同步**：登录Keep账号后，可手动同步跑步活动到Strava，支持筛选日期同步（小米/华为/OPPO运动健康数据->Keep->Strava）。
-*   **多平台/语言支持**：适配 iOS/Android, Windows/Web/macOS/Linux，支持简体中文和英文。
-*   **原生体验**：适配 iOS/Android 深色模式与系统交互。
-*   **数据安全**：凭证仅保存在设备本地。
+## 主要功能
 
-## 创建 Strava API 应用
+- **运动文件上传**：支持选择或分享 `.fit`，`.tcx`，`.gpx` 文件并上传到 Strava。
+- **运动类型设置**：上传时可选择默认类型跑步或骑行。
+- **Strava 授权登录**：通过 Strava API 授权连接账号，无需手动填写 Token。
+- **坐标纠偏**：可将 GCJ-02 坐标转换为 Strava 常用的 WGS84 坐标。
+- **顽鹿同步**：登录顽鹿账号后，可按日期筛选并同步骑行活动到 Strava。
+- **iGPSPORT 同步**：登录 iGPSPORT 账号后，可按日期筛选并同步骑行活动到 Strava。
+- **Keep 同步**：登录 Keep 账号后，可按日期筛选并同步跑步活动到 Strava，适合“小米/华为/OPPO 运动健康 -> Keep -> Strava”的数据流转。
+- **多平台支持**：适配 Android、iOS、Web、Windows、macOS、Linux。
+- **多语言与主题**：支持简体中文、英文，以及系统深色模式。
 
-1. 前往 https://www.strava.com/settings/api, 并创建API应用。
-2. 复制 客户 ID 和 客户端密钥 填入 App 设置。
+## 准备工作
+
+使用前需要创建一个 Strava API 应用：
+
+1. 打开 [Strava API](https://www.strava.com/settings/api)。
+2. 创建 API 应用。
+3. 复制 **客户 ID** 和 **客户端密钥**。
+4. 在 Strava Auto 的设置中填入对应信息。
+
+如果使用 Web 版本，还需要把 Strava API 中的 **授权回调域** 配置为你的部署域名。
 
 ## 快速体验
 
-[在线演示地址](https://strava.a2o.cc/)
+在线演示地址：[https://strava.a2o.cc/](https://strava.a2o.cc/)
 
-- **说明**：使用前请将 [Strava API](https://www.strava.com/settings/api) 中 **授权回调域** 修改为 `strava.a2o.cc`，否则将无法连接 Strava。
-- **提示**：参考下方[使用方式](#使用方式)，建议自行部署使用，演示地址使用 [Web](#web) 方式部署。
+使用演示站前，请先将 [Strava API](https://www.strava.com/settings/api) 的 **授权回调域** 设置为：`strava.a2o.cc`
 
-## 使用方式
+演示站基于 Web 版本部署。长期使用建议自行部署，以便使用自己的回调域名和 API 配置。
 
-### 安卓
+## 安装与部署
 
-下载 [`app-release.apk`](../../releases/latest/download/app-release.apk) 文件并安装，如无法打开Strava授权页，请尝试更改默认浏览器。
+### Android
+
+下载 [`app-release.apk`](../../releases/latest/download/app-release.apk) 并安装。
+
+如果无法打开 Strava 授权页，可尝试更换系统默认浏览器。
 
 ### iOS
 
-1. **安装环境**：前往 [AltStore 官网](https://altstore.io/) 下载并安装 AltServer。
-2. **侧载应用**：下载 [`Payload.ipa`](../../releases/latest/download/Payload.ipa) 文件，通过 AltStore 手机端选择该文件进行安装。
-3. **定期续签**：受限于个人证书，请**每 7 天**刷新一次证书。
+1. 前往 [AltStore 官网](https://altstore.io/) 下载并安装 AltServer。
+2. 下载 [`Payload.ipa`](../../releases/latest/download/Payload.ipa)。
+3. 在 AltStore 手机端选择该 IPA 文件进行侧载安装。
+4. 受个人证书限制，需要每 7 天刷新一次证书。
 
 ### Web
 
-1. **托管部署**：下载 [`web.zip`](../../releases/latest/download/web.zip) 文件，部署至 [Cloudflare Pages](https://pages.cloudflare.com/)，选择 **拖放文件**，将该文件拖入并部署Pages。
-2. **配置回调**：前往 [Strava API](https://www.strava.com/settings/api)，将 **授权回调域** 修改为 `pages.dev` 或Pages绑定的自定义域。
+1. 下载 [`web.zip`](../../releases/latest/download/web.zip)。
+2. 打开 [Cloudflare Pages](https://pages.cloudflare.com/)。
+3. 选择拖放文件，将 `web.zip` 上传并创建Pages部署。
+4. 前往 [Strava API 设置页](https://www.strava.com/settings/api)，将 **授权回调域** 设置为 `pages.dev` 域名或你绑定的自定义域名。
 
 ### Windows
 
-下载 [`Release.zip`](../../releases/latest/download/Release.zip) 文件并解压，双击exe文件运行。
+下载 [`Release.zip`](../../releases/latest/download/Release.zip)，解压后双击 `.exe` 文件运行。
+
+## 数据与隐私
+
+- 本应用不会向作者服务器上传、收集或存储用户数据。
+- Strava、顽鹿、iGPSPORT、Keep 等账号凭证仅保存在设备本地。
+- 活动数据只会在你主动点击上传或同步时发送到 Strava。
+- 请妥善保管自己的 API 配置和账号信息。
 
 ## 免责声明
 
-本应用为个人开源项目，与 OneLap/iGPSPORT/Keep 及 Strava 官方无任何关联。使用本应用所产生的一切后果由用户自行承担，作者不承担任何责任。本应用不向任何第三方或作者服务器收集、传输用户数据。活动数据仅在你主动触发同步时上传至 Strava。所有凭证仅保存在设备本地。
+本项目为个人开源项目，与 Strava、OneLap、iGPSPORT、Keep 官方均无任何关联。
 
-## 📄 开源协议
+使用本应用产生的一切后果由用户自行承担，作者不承担任何直接或间接责任。
 
-本项目采用 **GNU General Public License v3.0 (GPL-3.0)** 协议开源。
-这意味着如果您基于本项目修改或开发衍生项目，也必须开源。
+## 开源协议
+
+本项目基于 **GNU General Public License v3.0 (GPL-3.0)** 协议开源。
+
+如果你基于本项目进行修改、分发或开发衍生项目，也需要遵守 GPL-3.0 协议并开放相应源码。
