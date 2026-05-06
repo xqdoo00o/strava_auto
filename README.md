@@ -14,9 +14,9 @@
 *   **原生体验**：适配 iOS/Android 深色模式与系统交互。
 *   **数据安全**：凭证仅保存在设备本地。
 
-## 注册 Strava API
+## 创建 Strava API 应用
 
-1. 前往 https://www.strava.com/settings/api, 并创建应用。
+1. 前往 https://www.strava.com/settings/api, 并创建API应用。
 2. 复制 客户 ID 和 客户端密钥 填入 App 设置。
 
 ## 快速体验
