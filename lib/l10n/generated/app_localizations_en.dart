@@ -45,11 +45,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectLanguageTitle => 'Select Language';
 
   @override
-  String get coordCorrection => 'Coord Correction';
+  String get coordCorrection => 'Path Correction';
 
   @override
-  String get coordCorrectionTip =>
-      'If coordinate offset occurs after uploading the file, enable pls.';
+  String get coordCorrectionTip => 'Turn on to correct movement path offsets.';
 
   @override
   String get logoutConfirmationTitle => 'Disconnect?';

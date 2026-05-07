@@ -45,10 +45,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectLanguageTitle => '选择语言';
 
   @override
-  String get coordCorrection => '坐标纠偏';
+  String get coordCorrection => '运动轨迹纠偏';
 
   @override
-  String get coordCorrectionTip => '上传文件后如坐标偏移可开启';
+  String get coordCorrectionTip => '开启以修正运动轨迹偏移';
 
   @override
   String get logoutConfirmationTitle => '断开连接？';

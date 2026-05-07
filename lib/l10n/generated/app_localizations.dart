@@ -173,13 +173,13 @@ abstract class AppLocalizations {
   /// No description provided for @coordCorrection.
   ///
   /// In en, this message translates to:
-  /// **'Coord Correction'**
+  /// **'Path Correction'**
   String get coordCorrection;
 
   /// No description provided for @coordCorrectionTip.
   ///
   /// In en, this message translates to:
-  /// **'If coordinate offset occurs after uploading the file, enable pls.'**
+  /// **'Turn on to correct movement path offsets.'**
   String get coordCorrectionTip;
 
   /// No description provided for @logoutConfirmationTitle.
