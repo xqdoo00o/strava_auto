@@ -11,6 +11,9 @@ class AppUpgrader {
   static const String currentVersion = "0.9.7";
   static const String repoUrl =
       "https://api.github.com/repos/xqdoo00o/strava_auto/releases/latest";
+  static bool isMobilePlatform =
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
   static int compareVersion(String newVersion) {
     List<int> v1Parts = currentVersion.split('.').map(int.parse).toList();
     List<int> v2Parts = newVersion.split('.').map(int.parse).toList();
@@ -28,7 +31,7 @@ class AppUpgrader {
   }
 
   static Future<void> checkUpgrade(BuildContext context) async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb || !isMobilePlatform) {
       return;
     }
     try {
@@ -43,7 +46,10 @@ class AppUpgrader {
             if (data.containsKey('assets') &&
                 (data['assets'] as List).isNotEmpty) {
               final downloadUrl =
-                  data['assets'][0]['browser_download_url'] as String;
+                  data['assets'][defaultTargetPlatform == TargetPlatform.android
+                          ? 0
+                          : 1]['browser_download_url']
+                      as String;
               if (context.mounted) {
                 _showUpgradeDialog(
                   context,
