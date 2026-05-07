@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +10,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:app_links/app_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
@@ -661,29 +659,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Future<void> _uploadFile(XFile file, String sportType) async {
-    XFile uploadFile = file;
-
-    //iOS Sandboxing Fix: Copy file to app's temp directory
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      try {
-        final tempDir = await getTemporaryDirectory();
-        final newPath = '${tempDir.path}/${file.name}';
-        // Read bytes from the original (restricted) path and write to our temp path
-        File(file.path).copy(newPath);
-        uploadFile = XFile(newPath);
-        _addLog("Copied file to temp: $newPath");
-      } catch (e) {
-        _addLog("Failed to copy file: $e", isError: true);
-        if (mounted) {
-          context.showToast(
-            AppLocalizations.of(context)!.cannotAccessFile(file.path),
-          );
-        }
-        return;
-      }
-    }
-
+  Future<void> _uploadFile(XFile uploadFile, String sportType) async {
     setState(() {
       _isUploading = true;
     });
