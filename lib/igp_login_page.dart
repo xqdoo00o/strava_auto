@@ -44,7 +44,7 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
             lastSyncTime * 1000,
           );
         } else {
-          _lastSyncDate = DateTime.parse("2026-01-01");
+          _lastSyncDate = _nowDate;
         }
       });
     }
@@ -82,6 +82,7 @@ class _IGPLoginPageState extends State<IGPLoginPage> {
         } else {
           // Success
           _passwordController.clear();
+          FocusScope.of(context).unfocus();
           context.showToast(
             AppLocalizations.of(
               context,
