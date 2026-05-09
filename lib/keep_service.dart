@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 import 'package:xml/xml.dart';
 import 'coord_fixer.dart';
+import 'package:intl/intl.dart';
 import 'package:cross_file/cross_file.dart';
 
 class KeepService {
@@ -108,7 +109,7 @@ class KeepService {
                   break outerLoop;
                 }
                 final name =
-                    "${DateTime.fromMillisecondsSinceEpoch(startTime).toIso8601String()}_${stats['name'] ?? ""}.tcx";
+                    "${DateFormat('yyyyMMdd_HHmmss').format(DateTime.fromMillisecondsSinceEpoch(startTime))}_${stats['name'] ?? ""}.tcx";
                 result.add({'id': stats['id'].toString(), 'fileName': name});
               }
             }

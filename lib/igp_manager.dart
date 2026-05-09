@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 // Duplicate service logic here to make it self-contained for background tasks if needed,
@@ -128,7 +129,7 @@ class IGPManager extends ChangeNotifier {
       String dirPath = "";
       if (!kIsWeb) {
         final directory = await getTemporaryDirectory();
-        dirPath = "${directory.path}/";
+        dirPath = directory.path;
       }
 
       for (var activity in newActivities.reversed) {
@@ -137,7 +138,7 @@ class IGPManager extends ChangeNotifier {
 
         try {
           LogManager().addLog("Downloading $fileName...");
-          final savePath = '$dirPath$fileName';
+          final savePath = p.join(dirPath, fileName);
           final file = await _service.downloadFit(durl, savePath);
 
           LogManager().addLog("Uploading $fileName to Strava...");

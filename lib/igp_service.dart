@@ -78,7 +78,7 @@ class IGPService {
     Map<String, dynamic> queryParameters = {
       'pageNo': '1',
       'pageSize': '10',
-      // reqType 1 bike 2 run
+      // reqType: 1 bike 2 run
       'reqType': '1',
       'sort': '1',
       'sortType': '1',
