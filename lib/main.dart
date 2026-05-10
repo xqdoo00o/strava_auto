@@ -490,9 +490,23 @@ class _DashboardPageState extends State<DashboardPage>
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: extensions,
+        allowMultiple: true,
       );
+      if (!context.mounted) return;
       if (result != null && result.xFiles.isNotEmpty) {
-        _showUploadDialog(result.xFiles);
+        final validFiles = result.xFiles.where((file) {
+          return extensions.contains(getExtension(file.name));
+        }).toList();
+        if (validFiles.isEmpty) {
+          _addLog("No valid files picked.", isError: true);
+          final ctx = context;
+          ctx.showToast(
+            AppLocalizations.of(ctx)!.noValidFiles,
+            backgroundColor: Colors.red,
+          );
+          return;
+        }
+        _showUploadDialog(validFiles);
       }
     } catch (e) {
       _addLog("File picker error: $e", isError: true);
