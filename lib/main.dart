@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -409,7 +409,6 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _connectToStrava() async {
-    // 1. 检查凭据，如果没有，则显示弹窗并等待
     if (!_stravaService.hasCredentials) {
       _addLog("Missing Client ID/Secret configuration.", isError: true);
 
@@ -522,151 +521,184 @@ class _DashboardPageState extends State<DashboardPage>
       context.showToast(AppLocalizations.of(context)!.pleaseConnectFirst);
       return;
     }
+
     String tempSportType = 'Default';
     Navigator.of(context).popUntil((route) => route.isFirst);
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        // 2. 使用 StatefulBuilder 来管理弹窗内部状态
         builder: (context, setModalState) {
           final theme = Theme.of(context);
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.uploadActivityTitle,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: files
-                        .map(
-                          (file) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4.0,
-                            ), // 文件之间的间距
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.fitness_center,
-                                  color: Color(0xFFFC4C02),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SafeArea(
+                top: false,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: constraints.maxHeight - 16,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: theme.scaffoldBackgroundColor,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, -5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.uploadActivityTitle,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Scrollbar(
+                                thumbVisibility: true,
+                                child: ListView.separated(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: files.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 6),
+                                  itemBuilder: (context, index) {
+                                    final file = files[index];
+                                    return Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.timeline,
+                                          color: Color(0xFFFC4C02),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            file.name,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    file.name,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<String>(
+                              showSelectedIcon: false,
+                              style: SegmentedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              segments: [
+                                ButtonSegment(
+                                  value: 'Default',
+                                  label: Text(
+                                    AppLocalizations.of(context)!.defaultStr,
+                                  ),
+                                  icon: const Icon(Icons.star_border),
+                                ),
+                                ButtonSegment(
+                                  value: 'Run',
+                                  label: Text(
+                                    AppLocalizations.of(context)!.run,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.directions_run_rounded,
+                                  ),
+                                ),
+                                ButtonSegment(
+                                  value: 'Ride',
+                                  label: Text(
+                                    AppLocalizations.of(context)!.ride,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.directions_bike_rounded,
                                   ),
                                 ),
                               ],
+                              selected: {tempSportType},
+                              onSelectionChanged: (newSelection) {
+                                setModalState(() {
+                                  tempSportType = newSelection.first;
+                                });
+                              },
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // --- 3. 插入 SegmentedButton ---
-                SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<String>(
-                    showSelectedIcon: false,
-                    style: SegmentedButton.styleFrom(
-                      // visualDensity: VisualDensity(horizontal: 1, vertical: 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    segments: [
-                      ButtonSegment(
-                        value: 'Default',
-                        label: Text(AppLocalizations.of(context)!.defaultStr),
-                        icon: const Icon(Icons.star_border),
-                      ),
-                      ButtonSegment(
-                        value: 'Run',
-                        label: Text(AppLocalizations.of(context)!.run),
-                        icon: const Icon(Icons.directions_run_rounded),
-                      ),
-                      ButtonSegment(
-                        value: 'Ride',
-                        label: Text(AppLocalizations.of(context)!.ride),
-                        icon: const Icon(Icons.directions_bike_rounded),
-                      ),
-                    ],
-                    selected: {tempSportType},
-                    onSelectionChanged: (newSelection) {
-                      // 使用 setModalState 刷新底部弹窗的 UI
-                      setModalState(() {
-                        tempSportType = newSelection.first;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 32),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.cancelButton,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.pop(context);
+                                    for (var file in files) {
+                                      await _uploadFile(file, tempSportType);
+                                    }
+                                  },
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.uploadNowButton,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        child: Text(AppLocalizations.of(context)!.cancelButton),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(context); // Close dialog first
-                          for (var file in files) {
-                            await _uploadFile(file, tempSportType);
-                          }
-                        },
-                        child: Text(
-                          AppLocalizations.of(context)!.uploadNowButton,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 20),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
