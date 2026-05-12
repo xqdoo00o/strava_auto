@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:archive/archive.dart';
+import 'app_storage.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 
 class StravaService {
@@ -11,7 +11,7 @@ class StravaService {
   static const String _tokenUrl = 'https://www.strava.com/oauth/token';
   static const String _uploadUrl = 'https://www.strava.com/api/v3/uploads';
   static const String _redirectUri = 'stravaauto://localhost';
-  final storage = const FlutterSecureStorage();
+  final _storage = AppStorage();
   String? clientId;
   String? clientSecret;
 
@@ -20,12 +20,14 @@ class StravaService {
   int? expiresAt;
 
   Future<void> init() async {
-    clientId = await storage.read(key: 'client_id');
-    clientSecret = await storage.read(key: 'client_secret');
+    await _storage.init();
 
-    accessToken = await storage.read(key: 'access_token');
-    refreshToken = await storage.read(key: 'refresh_token');
-    expiresAt = int.parse(await storage.read(key: 'expires_at') ?? '0');
+    clientId = await _storage.read(key: 'client_id');
+    clientSecret = await _storage.read(key: 'client_secret');
+
+    accessToken = await _storage.read(key: 'access_token');
+    refreshToken = await _storage.read(key: 'refresh_token');
+    expiresAt = int.parse(await _storage.read(key: 'expires_at') ?? '0');
   }
 
   bool get isAuthenticated {
@@ -109,36 +111,36 @@ class StravaService {
     refreshToken = data['refresh_token'];
     expiresAt = data['expires_at'];
 
-    await storage.write(key: 'access_token', value: accessToken!);
-    await storage.write(key: 'refresh_token', value: refreshToken!);
-    await storage.write(key: 'expires_at', value: expiresAt!.toString());
+    await _storage.write(key: 'access_token', value: accessToken!);
+    await _storage.write(key: 'refresh_token', value: refreshToken!);
+    await _storage.write(key: 'expires_at', value: expiresAt!.toString());
   }
 
   Future<bool> saveCredentials(String clientId, String clientSecret) async {
     final bool credentialsChanged =
         (this.clientId != clientId || this.clientSecret != clientSecret);
     if (this.clientId != null && credentialsChanged) {
-      logout();
+      await logout();
     }
     this.clientId = clientId == "" ? null : clientId;
     this.clientSecret = clientSecret == "" ? null : clientSecret;
     if (clientId != "") {
-      await storage.write(key: 'client_id', value: clientId);
+      await _storage.write(key: 'client_id', value: clientId);
     } else {
-      await storage.delete(key: 'client_id');
+      await _storage.delete(key: 'client_id');
     }
     if (clientSecret != "") {
-      await storage.write(key: 'client_secret', value: clientSecret);
+      await _storage.write(key: 'client_secret', value: clientSecret);
     } else {
-      await storage.delete(key: 'client_secret');
+      await _storage.delete(key: 'client_secret');
     }
     return credentialsChanged;
   }
 
   Future<void> logout() async {
-    await storage.delete(key: 'access_token');
-    await storage.delete(key: 'refresh_token');
-    await storage.delete(key: 'expires_at');
+    await _storage.delete(key: 'access_token');
+    await _storage.delete(key: 'refresh_token');
+    await _storage.delete(key: 'expires_at');
     accessToken = null;
     refreshToken = null;
     expiresAt = null;

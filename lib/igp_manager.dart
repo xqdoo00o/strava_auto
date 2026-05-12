@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 // Duplicate service logic here to make it self-contained for background tasks if needed,
 // or just import the service. Importing is better.
+import 'app_storage.dart';
 import 'igp_service.dart';
 import 'strava_service.dart';
 import 'extension.dart';
@@ -17,7 +17,7 @@ class IGPManager extends ChangeNotifier {
   factory IGPManager() => _instance;
   IGPManager._internal();
 
-  final _storage = const FlutterSecureStorage();
+  final _storage = AppStorage();
   final _service = IGPService();
   final _stravaService = GetIt.I<StravaService>();
 
@@ -31,9 +31,12 @@ class IGPManager extends ChangeNotifier {
   int? _tokenExp;
 
   Future<void> init() async {
+    await _storage.init();
+
     _username = await _storage.read(key: 'igp_username');
     _token = await _storage.read(key: 'igp_token');
-    _tokenExp = int.parse(await _storage.read(key: 'igp_token_exp') ?? "0");
+    _tokenExp =
+        int.tryParse(await _storage.read(key: 'igp_token_exp') ?? "") ?? 0;
     notifyListeners();
   }
 
@@ -106,7 +109,7 @@ class IGPManager extends ChangeNotifier {
         if (loginResult['success'] != true) {
           LogManager().addLog("iGPSPORT Sync Failed: Login error.");
           throw Exception(
-            "Login failed: ${loginResult['msg'] ?? 'Unknown error'}",
+            "Login failed: ${loginResult['message'] ?? 'Unknown error'}",
           );
         }
         await writeToken(loginResult['token']);

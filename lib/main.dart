@@ -539,7 +539,7 @@ class _DashboardPageState extends State<DashboardPage>
                   alignment: Alignment.bottomCenter,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight - 16,
+                      maxHeight: constraints.maxHeight - 12,
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(24),
