@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Duplicate service logic here to make it self-contained for background tasks if needed,
 // or just import the service. Importing is better.
@@ -20,6 +21,8 @@ class IGPManager extends ChangeNotifier {
   final _storage = AppStorage();
   final _service = IGPService();
   final _stravaService = GetIt.I<StravaService>();
+  DateTime? _lastSyncDate;
+  DateTime? get lastSyncDate => _lastSyncDate;
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -32,11 +35,38 @@ class IGPManager extends ChangeNotifier {
 
   Future<void> init() async {
     await _storage.init();
+    await _initDate();
 
     _username = await _storage.read(key: 'igp_username');
     _token = await _storage.read(key: 'igp_token');
     _tokenExp =
         int.tryParse(await _storage.read(key: 'igp_token_exp') ?? "") ?? 0;
+    notifyListeners();
+  }
+
+  Future<void> _initDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastSyncTime = prefs.getInt('igp_last_sync_time');
+
+    if (lastSyncTime != null && lastSyncTime > 0) {
+      _lastSyncDate = DateTime.fromMillisecondsSinceEpoch(lastSyncTime * 1000);
+    } else {
+      _lastSyncDate = DateTime.now();
+    }
+  }
+
+  Future<void> setLastSyncDate(DateTime? lastSyncDate) async {
+    _lastSyncDate = lastSyncDate;
+    notifyListeners();
+  }
+
+  Future<void> _saveLastSyncDate(DateTime lastSyncDate) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      'igp_last_sync_time',
+      lastSyncDate.millisecondsSinceEpoch ~/ 1000,
+    );
+    _lastSyncDate = lastSyncDate;
     notifyListeners();
   }
 
@@ -78,7 +108,7 @@ class IGPManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<int> syncNow(DateTime? lastSyncDate) async {
+  Future<int> syncNow() async {
     if (_isSyncing) return 0;
     _isSyncing = true;
     notifyListeners();
@@ -117,10 +147,11 @@ class IGPManager extends ChangeNotifier {
 
       // 3. Fetch list
       LogManager().addLog("iGPSPORT Sync: Fetching activities...");
-      final newActivities = await _service.getActivities(lastSyncDate);
+      final newActivities = await _service.getActivities(_lastSyncDate);
 
       if (newActivities.isEmpty) {
         LogManager().addLog("iGPSPORT Sync: No new activities.");
+        await _saveLastSyncDate(DateTime.now());
         return 0;
       } else {
         LogManager().addLog(
@@ -157,6 +188,7 @@ class IGPManager extends ChangeNotifier {
           LogManager().addLog("Failed to sync $fileName: $e", isError: true);
         }
       }
+      await _saveLastSyncDate(DateTime.now());
       return syncedCount;
     } catch (e) {
       LogManager().addLog("iGPSPORT Sync Error: $e", isError: true);

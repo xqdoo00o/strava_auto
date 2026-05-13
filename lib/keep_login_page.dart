@@ -14,11 +14,13 @@ class KeepLoginPage extends StatelessWidget {
       platformName: (l10n) => l10n.keep,
       sportName: (l10n) => l10n.run,
       accountLabel: (l10n) => l10n.phoneLabel,
-      lastSyncTimeKey: 'keep_last_sync_time',
+      listenable: manager,
       username: () => manager.username,
+      lastSyncDate: () => manager.lastSyncDate,
       init: manager.init,
       login: manager.login,
       logout: manager.logout,
+      setLastSyncDate: manager.setLastSyncDate,
       syncNow: manager.syncNow,
     );
   }

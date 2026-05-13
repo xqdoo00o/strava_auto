@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_state.dart';
 import 'extension.dart';
@@ -16,23 +15,27 @@ class ThirdPartyLoginPage extends StatefulWidget {
     required this.platformName,
     required this.sportName,
     required this.accountLabel,
-    required this.lastSyncTimeKey,
+    required this.listenable,
     required this.username,
+    required this.lastSyncDate,
     required this.init,
     required this.login,
     required this.logout,
+    required this.setLastSyncDate,
     required this.syncNow,
   });
 
   final LocalizedTextBuilder platformName;
   final LocalizedTextBuilder sportName;
   final LocalizedTextBuilder accountLabel;
-  final String lastSyncTimeKey;
+  final Listenable listenable;
   final String? Function() username;
+  final DateTime? Function() lastSyncDate;
   final Future<void> Function() init;
   final Future<bool> Function(String username, String password) login;
   final Future<void> Function() logout;
-  final Future<int> Function(DateTime? lastSyncDate) syncNow;
+  final Future<void> Function(DateTime? lastSyncDate) setLastSyncDate;
+  final Future<int> Function() syncNow;
 
   @override
   State<ThirdPartyLoginPage> createState() => _ThirdPartyLoginPageState();
@@ -41,18 +44,14 @@ class ThirdPartyLoginPage extends StatefulWidget {
 class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
   final AppState appState = GetIt.I<AppState>();
   final _formKey = GlobalKey<FormState>();
-  final _nowDate = DateTime.now();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  DateTime? _lastSyncDate;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _initDate();
     _loadCredentials();
   }
 
@@ -61,23 +60,6 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initDate() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastSyncTime = prefs.getInt(widget.lastSyncTimeKey);
-
-    if (mounted) {
-      setState(() {
-        if (lastSyncTime != null && lastSyncTime > 0) {
-          _lastSyncDate = DateTime.fromMillisecondsSinceEpoch(
-            lastSyncTime * 1000,
-          );
-        } else {
-          _lastSyncDate = _nowDate;
-        }
-      });
-    }
   }
 
   Future<void> _loadCredentials() async {
@@ -134,18 +116,9 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
     context.showToast(l10n.syncingMessage);
 
     try {
-      final syncedCount = await widget.syncNow(_lastSyncDate);
+      final syncedCount = await widget.syncNow();
       if (mounted) {
         context.showToast(l10n.syncSuccessMessage(syncedCount));
-        final prefs = await SharedPreferences.getInstance();
-        final nowTime = DateTime.now();
-        await prefs.setInt(
-          widget.lastSyncTimeKey,
-          nowTime.millisecondsSinceEpoch ~/ 1000,
-        );
-        setState(() {
-          _lastSyncDate = nowTime;
-        });
       }
     } catch (e) {
       if (mounted) {
@@ -164,11 +137,12 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    final lastSyncDate = widget.lastSyncDate();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _lastSyncDate,
+      initialDate: lastSyncDate ?? DateTime.now(),
       firstDate: DateTime(2020),
-      lastDate: _nowDate,
+      lastDate: DateTime.now(),
       builder: (BuildContext context, Widget? child) {
         final theme = Theme.of(context);
         return Center(
@@ -180,9 +154,9 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() => _lastSyncDate = null);
-                      Navigator.pop(context);
+                    onPressed: () async {
+                      await widget.setLastSyncDate(null);
+                      if (context.mounted) Navigator.pop(context);
                     },
                     icon: const Icon(Icons.history),
                     label: Text(
@@ -208,165 +182,169 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
       },
     );
     if (picked != null) {
-      setState(() {
-        _lastSyncDate = picked;
-      });
+      await widget.setLastSyncDate(picked);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final username = widget.username();
+    return ListenableBuilder(
+      listenable: widget.listenable,
+      builder: (context, _) {
+        final theme = Theme.of(context);
+        final l10n = AppLocalizations.of(context)!;
+        final username = widget.username();
+        final lastSyncDate = widget.lastSyncDate();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.thirdLoginTitle(widget.platformName(l10n))),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.thirdLoginDescription(
-                  widget.platformName(l10n),
-                  widget.sportName(l10n),
-                ),
-                style: TextStyle(fontSize: 16, color: theme.hintColor),
-              ),
-              const SizedBox(height: 32),
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: widget.accountLabel(l10n),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person_outline),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your account';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CustomPasswordField(
-                controller: _passwordController,
-                labelText: l10n.passwordLabel,
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ],
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            username != null ? Icons.refresh : Icons.login,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 6),
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: kIsWeb ? 2.0 : 0.0,
-                            ),
-                            child: Text(
-                              username != null
-                                  ? l10n.reconnectButton
-                                  : l10n.connectSyncButton,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 16),
-              if (username != null) ...[
-                ElevatedButton.icon(
-                  onPressed: () => _pickDate(context),
-                  icon: const Icon(Icons.calendar_today),
-                  label: Padding(
-                    padding: EdgeInsets.only(bottom: kIsWeb ? 2.0 : 0.0),
-                    child: Text(
-                      _lastSyncDate == null
-                          ? l10n.allActivities
-                          : "${_lastSyncDate!.toIso8601String().split('T')[0]} ${l10n.postActivities}",
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSyncNow,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.tertiary,
-                    foregroundColor: theme.colorScheme.onTertiary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.onTertiary,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.sync, size: 20),
-                            const SizedBox(width: 6),
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: kIsWeb ? 2.0 : 0.0,
-                              ),
-                              child: Text(l10n.syncNowButton),
-                            ),
-                          ],
-                        ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () async {
-                    await widget.logout();
-                    setState(() {
-                      _usernameController.clear();
-                      _passwordController.clear();
-                    });
-                  },
-                  child: Text(
-                    l10n.disconnectAccountButton,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
-            ],
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.thirdLoginTitle(widget.platformName(l10n))),
           ),
-        ),
-      ),
+          body: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.thirdLoginDescription(
+                      widget.platformName(l10n),
+                      widget.sportName(l10n),
+                    ),
+                    style: TextStyle(fontSize: 16, color: theme.hintColor),
+                  ),
+                  const SizedBox(height: 32),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      labelText: widget.accountLabel(l10n),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.person_outline),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your account';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CustomPasswordField(
+                    controller: _passwordController,
+                    labelText: l10n.passwordLabel,
+                  ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                username != null ? Icons.refresh : Icons.login,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: kIsWeb ? 2.0 : 0.0,
+                                ),
+                                child: Text(
+                                  username != null
+                                      ? l10n.reconnectButton
+                                      : l10n.connectSyncButton,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (username != null) ...[
+                    ElevatedButton.icon(
+                      onPressed: () => _pickDate(context),
+                      icon: const Icon(Icons.calendar_today),
+                      label: Padding(
+                        padding: EdgeInsets.only(bottom: kIsWeb ? 2.0 : 0.0),
+                        child: Text(
+                          lastSyncDate == null
+                              ? l10n.allActivities
+                              : "${lastSyncDate.toIso8601String().split('T')[0]} ${l10n.postActivities}",
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleSyncNow,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.tertiary,
+                        foregroundColor: theme.colorScheme.onTertiary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isLoading
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.onTertiary,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.sync, size: 20),
+                                const SizedBox(width: 6),
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: kIsWeb ? 2.0 : 0.0,
+                                  ),
+                                  child: Text(l10n.syncNowButton),
+                                ),
+                              ],
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () async {
+                        await widget.logout();
+                        setState(() {
+                          _usernameController.clear();
+                          _passwordController.clear();
+                        });
+                      },
+                      child: Text(
+                        l10n.disconnectAccountButton,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

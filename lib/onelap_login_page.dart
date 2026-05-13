@@ -14,11 +14,13 @@ class OneLapLoginPage extends StatelessWidget {
       platformName: (l10n) => l10n.oneLap,
       sportName: (l10n) => l10n.ride,
       accountLabel: (l10n) => l10n.accountLabel,
-      lastSyncTimeKey: 'onelap_last_sync_time',
+      listenable: manager,
       username: () => manager.username,
+      lastSyncDate: () => manager.lastSyncDate,
       init: manager.init,
       login: manager.login,
       logout: manager.logout,
+      setLastSyncDate: manager.setLastSyncDate,
       syncNow: manager.syncNow,
     );
   }
