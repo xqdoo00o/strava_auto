@@ -42,7 +42,7 @@ class KeepManager extends ChangeNotifier {
 
   Future writeToken(String token) async {
     _token = token;
-    await _storage.write(key: 'keep_token', value: _token);
+    await _storage.write(key: 'keep_token', value: token);
     _tokenExp = getJWTTOkenExp(_token!);
     await _storage.write(key: 'keep_token_exp', value: _tokenExp!.toString());
   }

@@ -20,11 +20,10 @@ class AppStorage {
   }
 
   SharedPreferences get _prefs {
-    final prefs = _sharedPreferences;
-    if (prefs == null) {
+    if (_sharedPreferences == null) {
       throw StateError('AppStorage.init() must be called before use on macOS.');
     }
-    return prefs;
+    return _sharedPreferences!;
   }
 
   Future<String?> read({required String key}) async {
@@ -34,12 +33,7 @@ class AppStorage {
     return _secureStorage.read(key: key);
   }
 
-  Future<void> write({required String key, required String? value}) async {
-    if (value == null) {
-      await delete(key: key);
-      return;
-    }
-
+  Future<void> write({required String key, required String value}) async {
     if (_shouldUseSharedPreferences) {
       await _prefs.setString(key, value);
       return;
