@@ -113,7 +113,7 @@ class KeepManager extends ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
 
-    // running: 跑步 cycling: 骑行
+    // running: 跑步 cycling: 骑行 training: 游泳锻炼等其他
     final sportType = "running";
     int syncedCount = 0;
     try {

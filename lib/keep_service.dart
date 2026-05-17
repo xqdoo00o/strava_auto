@@ -22,17 +22,17 @@ class KeepService {
   String? _token;
   set token(String value) {
     _token = value;
-    headers['Authorization'] = 'Bearer $_token';
+    _headers['Authorization'] = 'Bearer $_token';
   }
 
-  int timestampThresholdInDecisecond = 3600000;
-  final cipher = PaddedBlockCipherImpl(
+  final _timestampThresholdInDecisecond = 3600000;
+  final _cipher = PaddedBlockCipherImpl(
     PKCS7Padding(),
     CBCBlockCipher(AESEngine()),
   );
-  final key = base64Decode('NTZmZTU5OzgyZzpkODczYw==');
-  final iv = base64Decode('MjM0Njg5MjQzMjkyMDMwMA==');
-  Map<String, String> headers = {
+  final _key = base64Decode('NTZmZTU5OzgyZzpkODczYw==');
+  final _iv = base64Decode('MjM0Njg5MjQzMjkyMDMwMA==');
+  final Map<String, String> _headers = {
     "User-Agent":
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0",
     "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
@@ -45,7 +45,7 @@ class KeepService {
     try {
       final response = await http.post(
         Uri.parse(_loginUrl),
-        headers: headers,
+        headers: _headers,
         body: body,
       );
       if (response.statusCode == 200) {
@@ -57,7 +57,7 @@ class KeepService {
         }
         if (responseData is Map && responseData.isNotEmpty) {
           _token = responseData['token'];
-          headers['Authorization'] = 'Bearer $_token';
+          _headers['Authorization'] = 'Bearer $_token';
           return {'success': true, 'token': _token};
         } else {
           return {
@@ -90,7 +90,7 @@ class KeepService {
     while (true) {
       final response = await http.get(
         Uri.parse('$_activityIdsUrl&type=$sportType&last_date=$lastDate'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -134,13 +134,13 @@ class KeepService {
   ) async {
     final response = await http.get(
       Uri.parse('$_activityDataUrl${sportType}log/$id'),
-      headers: headers,
+      headers: _headers,
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data is Map && data.containsKey('data')) {
-        final runData = data['data'] as Map<String, dynamic>;
-        final outputBytes = parseRawDataToFile(runData);
+        final sportData = data['data'] as Map<String, dynamic>;
+        final outputBytes = parseRawDataToFile(sportData);
         final XFile xfile;
         if (kIsWeb) {
           xfile = XFile.fromData(outputBytes, name: savePath);
@@ -158,68 +158,87 @@ class KeepService {
   List<dynamic> decodeRunmapData(String text, {bool isGeo = false}) {
     var cipherBytes = base64Decode(text);
     if (isGeo) {
-      cipher.reset();
-      cipher.init(
+      _cipher.reset();
+      _cipher.init(
         false,
         PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-          ParametersWithIV<KeyParameter>(KeyParameter(key), iv),
+          ParametersWithIV<KeyParameter>(KeyParameter(_key), _iv),
           null,
         ),
       );
-      cipherBytes = cipher.process(cipherBytes);
+      cipherBytes = _cipher.process(cipherBytes);
     }
     final decompressedBytes = GZipDecoder().decodeBytes(cipherBytes);
-    final runPointsData = jsonDecode(utf8.decode(decompressedBytes));
-    return runPointsData;
+    return jsonDecode(utf8.decode(decompressedBytes));
   }
 
-  int? findNearestHr(
+  List<int>? findNearestHr(
     List<dynamic> hrDataList,
     int targetTime,
-    int startTime, {
+    int startTime,
+    int startIndex, {
     int threshold = 100,
   }) {
     Map<String, dynamic>? closestElement;
-    num minDifference = double.infinity;
-    if (targetTime > timestampThresholdInDecisecond) {
+    if (targetTime > _timestampThresholdInDecisecond) {
       targetTime = targetTime - (startTime ~/ 100);
     }
-    for (var item in hrDataList) {
-      final timestamp = item['timestamp'] as num?;
-      if (timestamp == null) continue;
-      final difference = (timestamp - targetTime).abs();
-      if (difference <= threshold && difference < minDifference) {
-        closestElement = item;
-        minDifference = difference;
+    num minDifference = double.infinity;
+    if (startIndex == 0) {
+      for (var i = startIndex; i < hrDataList.length; i++) {
+        final item = hrDataList[i];
+        final timestamp = item['timestamp'] as num?;
+        if (timestamp == null) continue;
+        final difference = (timestamp - targetTime).abs();
+        if (difference <= threshold && difference < minDifference) {
+          closestElement = item;
+          minDifference = difference;
+          startIndex = i;
+        }
+      }
+    } else {
+      while (closestElement == null) {
+        final searchEndIndex = (startIndex + 5).clamp(0, hrDataList.length);
+        for (var i = startIndex; i < searchEndIndex; i++) {
+          final item = hrDataList[i];
+          final timestamp = item['timestamp'] as num?;
+          if (timestamp == null) continue;
+
+          final difference = (timestamp - targetTime).abs();
+          if (difference <= threshold && difference < minDifference) {
+            closestElement = item;
+            minDifference = difference;
+            startIndex = i;
+          }
+        }
+        if (closestElement == null) {
+          startIndex = startIndex + 5;
+        }
       }
     }
+
     if (closestElement != null) {
       final hr = closestElement['beatsPerMinute'];
       if (hr != null && hr > 0) {
-        return hr;
+        return [hr as int, startIndex];
       }
     }
     return null;
   }
 
-  Uint8List parseRawDataToFile(Map<String, dynamic> runData) {
-    final startTime = runData['startTime'];
-    double? avgHeartRate;
+  Uint8List parseRawDataToFile(Map<String, dynamic> sportData) {
+    final startTime = sportData['startTime'];
     List<dynamic> decodedHrData = [];
-    if (runData['heartRate'] != null) {
-      avgHeartRate = runData['heartRate']['averageHeartRate'];
-      final heartRateData = runData['heartRate']['heartRates'];
+    if (sportData['heartRate'] != null) {
+      final heartRateData = sportData['heartRate']['heartRates'];
       if (heartRateData != null) {
         decodedHrData = decodeRunmapData(heartRateData);
       }
-      if (avgHeartRate != null && avgHeartRate < 0) {
-        avgHeartRate = null;
-      }
     }
-    if (runData['geoPoints'] != null) {
-      final geoPoints = runData['geoPoints'];
-      final runPointsData = decodeRunmapData(geoPoints, isGeo: true);
-      for (var p in runPointsData) {
+    if (sportData['geoPoints'] != null) {
+      final geoPoints = sportData['geoPoints'];
+      final sportPointsData = decodeRunmapData(geoPoints, isGeo: true);
+      for (var p in sportPointsData) {
         final transformed = CoordinateConverter.gcj2WGSExact(
           p['latitude'],
           p['longitude'],
@@ -227,26 +246,29 @@ class KeepService {
         p['latitude'] = transformed[0];
         p['longitude'] = transformed[1];
       }
-      for (var p in runPointsData) {
+      var hrStartIndex = 0;
+      for (var p in sportPointsData) {
         if (!p.containsKey('timestamp')) {
           p['timestamp'] = p.containsKey('unixTimestamp')
               ? p['unixTimestamp']
               : 0;
         }
-        final pHr = findNearestHr(
+        final targetTime = int.parse(p['timestamp'].toString());
+        final hrMatch = findNearestHr(
           decodedHrData,
-          int.parse(p['timestamp'].toString()),
+          targetTime,
           startTime,
+          hrStartIndex,
         );
-        if (pHr != null) {
-          p['hr'] = pHr;
-        }
+        if (hrMatch == null) continue;
+        hrStartIndex = hrMatch[1];
+        p['hr'] = hrMatch[0];
       }
       // Strava running: 跑步 biking: 骑行
       return parsePointsToTcx(
-        runData,
-        runPointsData,
-        runData["dataType"].toLowerCase().contains("running")
+        sportData,
+        sportPointsData,
+        sportData["dataType"].toLowerCase().contains("running")
             ? "running"
             : "biking",
       );
@@ -255,12 +277,12 @@ class KeepService {
   }
 
   Uint8List parsePointsToTcx(
-    Map<String, dynamic> runData,
-    List<dynamic> runPointsData,
+    Map<String, dynamic> sportData,
+    List<dynamic> sportPointsData,
     String sportType,
   ) {
     final fitStartTime = DateTime.fromMillisecondsSinceEpoch(
-      runData['startTime'],
+      sportData['startTime'],
       isUtc: true,
     ).toIso8601String();
     final builder = XmlBuilder();
@@ -310,25 +332,26 @@ class KeepService {
                   nest: () {
                     builder.element(
                       'TotalTimeSeconds',
-                      nest: runData['duration'].toString(),
+                      nest: sportData['duration'].toString(),
                     );
                     builder.element(
                       'DistanceMeters',
-                      nest: runData['distance'].toString(),
+                      nest: sportData['distance'].toString(),
                     );
                     builder.element(
                       'Calories',
-                      nest: runData['calorie'].toString(),
+                      nest: sportData['calorie'].toString(),
                     );
                     builder.element(
                       'Track',
                       nest: () {
                         double? smoothCadence;
                         int? initStep;
-                        for (int i = 0; i < runPointsData.length; i++) {
-                          final point = runPointsData[i];
+                        int cadenceWindowStartIndex = 0;
+                        for (int i = 0; i < sportPointsData.length; i++) {
+                          final point = sportPointsData[i];
                           final timeStamp = DateTime.fromMillisecondsSinceEpoch(
-                            runData['startTime'] + (point['timestamp'] * 100),
+                            sportData['startTime'] + (point['timestamp'] * 100),
                             isUtc: true,
                           ).toIso8601String();
                           builder.element(
@@ -394,18 +417,22 @@ class KeepService {
                                       final prevTime = duration - 10;
                                       num prevStep = 0;
                                       num prevDuration = 0;
-                                      for (int j = i - 1; j >= 0; j--) {
-                                        final nowDuration =
-                                            runPointsData[j]['currentTotalDuration'];
-                                        if (nowDuration != null &&
-                                            nowDuration < prevTime) {
-                                          prevDuration = nowDuration;
-                                          prevStep =
-                                              runPointsData[j]['currentTotalSteps'] ??
-                                              0;
+                                      while (cadenceWindowStartIndex < i) {
+                                        final nextDuration =
+                                            sportPointsData[cadenceWindowStartIndex +
+                                                1]['currentTotalDuration'];
+                                        if (nextDuration == null ||
+                                            nextDuration >= prevTime) {
                                           break;
                                         }
+                                        cadenceWindowStartIndex++;
                                       }
+                                      final prevPoint =
+                                          sportPointsData[cadenceWindowStartIndex];
+                                      prevDuration =
+                                          prevPoint['currentTotalDuration'];
+                                      prevStep =
+                                          prevPoint['currentTotalSteps'] ?? 0;
                                       rawCadence =
                                           ((step - prevStep) /
                                           ((duration - prevDuration) / 60) /
