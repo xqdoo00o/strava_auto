@@ -104,6 +104,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thirdPartySync => 'Fitness Platform Sync';
 
   @override
+  String get syncPlatforms => 'Fitness Platforms';
+
+  @override
   String get oneLap => 'OneLap';
 
   @override

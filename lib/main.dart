@@ -696,7 +696,7 @@ class _DashboardPageState extends State<DashboardPage>
             }
 
             return AlertDialog(
-              title: Text(_homeSyncConfigTitle(context)),
+              title: Text(l10n.syncPlatforms),
               contentPadding: const EdgeInsets.only(top: 12),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -756,12 +756,6 @@ class _DashboardPageState extends State<DashboardPage>
     if (result != null) {
       await _saveVisibleThirdPartySyncs(result);
     }
-  }
-
-  String _homeSyncConfigTitle(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'zh'
-        ? '配置同步项目'
-        : 'Sync Items';
   }
 
   @override
@@ -884,7 +878,7 @@ class _DashboardPageState extends State<DashboardPage>
             IconButton(
               icon: const Icon(Icons.tune_rounded),
               color: Colors.white,
-              tooltip: _homeSyncConfigTitle(context),
+              tooltip: AppLocalizations.of(context)!.syncPlatforms,
               onPressed: _showThirdPartySyncConfigDialog,
             ),
             const SizedBox(width: 8),

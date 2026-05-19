@@ -284,6 +284,12 @@ abstract class AppLocalizations {
   /// **'Fitness Platform Sync'**
   String get thirdPartySync;
 
+  /// No description provided for @syncPlatforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness Platforms'**
+  String get syncPlatforms;
+
   /// No description provided for @oneLap.
   ///
   /// In en, this message translates to:

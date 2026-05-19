@@ -102,6 +102,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get thirdPartySync => '运动平台同步';
 
   @override
+  String get syncPlatforms => '显示运动平台';
+
+  @override
   String get oneLap => '顽鹿';
 
   @override

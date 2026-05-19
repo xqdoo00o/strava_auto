@@ -27,6 +27,7 @@
   "stravaChangeTip": "Strava API 变更，请重新连接 Strava 账号。",
   "noValidFiles": "未发现可用文件",
   "thirdPartySync": "运动平台同步",
+  "syncPlatforms": "显示运动平台",
   "oneLap": "顽鹿",
   "iGPS": "迹驰",
   "keep": "Keep",
