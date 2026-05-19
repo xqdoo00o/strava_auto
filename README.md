@@ -65,6 +65,7 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 
 1. 下载 [`Strava.Auto.app.zip`](../../releases/latest/download/Strava.Auto.app.zip) 并解压。
 2. 请打开终端输入以下命令，然后将 `Strava Auto.app` 文件拖入终端自动补全路径并执行命令。
+
     ```
     xattr -dr com.apple.quarantine 
     ```
