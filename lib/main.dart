@@ -802,7 +802,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildStatusCard(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: _appState.isConnected
@@ -870,13 +870,6 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            color: _appState.isConnected ? Colors.white : theme.iconTheme.color,
-            tooltip: _homeSyncConfigTitle(context),
-            onPressed: _showThirdPartySyncConfigDialog,
-          ),
-          const SizedBox(width: 7),
-          IconButton(
             icon: const Icon(Icons.settings_rounded),
             color: _appState.isConnected ? Colors.white : theme.iconTheme.color,
             tooltip: AppLocalizations.of(context)!.settingsTooltip,
@@ -887,7 +880,14 @@ class _DashboardPageState extends State<DashboardPage>
             },
           ),
           if (_appState.isConnected) ...[
-            const SizedBox(width: 7),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.tune_rounded),
+              color: Colors.white,
+              tooltip: _homeSyncConfigTitle(context),
+              onPressed: _showThirdPartySyncConfigDialog,
+            ),
+            const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.logout_rounded),
               color: Colors.white,
