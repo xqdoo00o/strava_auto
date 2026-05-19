@@ -99,7 +99,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancelButton => '取消';
 
   @override
-  String get experimentalSection => '实验性功能';
+  String get thirdPartySync => '运动平台同步';
 
   @override
   String get oneLap => '顽鹿';

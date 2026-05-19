@@ -17,6 +17,26 @@ import 'package:get_it/get_it.dart';
 import 'upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+Widget _buildThirdPartyLetterIcon({
+  required String letter,
+  required Color color,
+}) {
+  return Container(
+    width: 28,
+    height: 28,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    child: Text(
+      letter,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+}
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -136,7 +156,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
           _buildSectionHeader(
             theme,
-            AppLocalizations.of(context)!.experimentalSection,
+            AppLocalizations.of(context)!.thirdPartySync,
           ),
           AnimatedBuilder(
             animation: Listenable.merge([OneLapManager(), LocaleManager()]),
@@ -152,9 +172,9 @@ class SettingsPage extends StatelessWidget {
               return Card(
                 clipBehavior: Clip.antiAlias,
                 child: ListTile(
-                  leading: const Icon(
-                    Icons.sync_rounded,
-                    color: Color(0xFFFC4C02),
+                  leading: _buildThirdPartyLetterIcon(
+                    letter: 'W',
+                    color: const Color(0xFF0054FB),
                   ),
                   title: Text(
                     AppLocalizations.of(
@@ -202,9 +222,9 @@ class SettingsPage extends StatelessWidget {
               return Card(
                 clipBehavior: Clip.antiAlias,
                 child: ListTile(
-                  leading: const Icon(
-                    Icons.sync_rounded,
-                    color: Color(0xFFFC4C02),
+                  leading: _buildThirdPartyLetterIcon(
+                    letter: 'I',
+                    color: const Color(0xFFFD3C1F),
                   ),
                   title: Text(
                     AppLocalizations.of(
@@ -252,9 +272,9 @@ class SettingsPage extends StatelessWidget {
               return Card(
                 clipBehavior: Clip.antiAlias,
                 child: ListTile(
-                  leading: const Icon(
-                    Icons.sync_rounded,
-                    color: Color(0xFFFC4C02),
+                  leading: _buildThirdPartyLetterIcon(
+                    letter: 'K',
+                    color: const Color(0xFF483E5F),
                   ),
                   title: Text(
                     AppLocalizations.of(

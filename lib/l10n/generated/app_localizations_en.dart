@@ -101,7 +101,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelButton => 'Cancel';
 
   @override
-  String get experimentalSection => 'Experimental Features';
+  String get thirdPartySync => 'Fitness Platform Sync';
 
   @override
   String get oneLap => 'OneLap';

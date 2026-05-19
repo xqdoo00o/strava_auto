@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 class CustomPasswordField extends StatefulWidget {
   final TextEditingController controller;
   final String labelText;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const CustomPasswordField({
     super.key,
     required this.controller,
     required this.labelText,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -45,6 +49,8 @@ class _CustomPasswordFieldState extends State<CustomPasswordField> {
     return TextFormField(
       controller: widget.controller,
       obscureText: _isObscure,
+      textInputAction: widget.textInputAction,
+      onFieldSubmitted: widget.onFieldSubmitted,
       decoration: InputDecoration(
         labelText: widget.labelText,
         border: const OutlineInputBorder(),

@@ -233,6 +233,12 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                   CustomPasswordField(
                     controller: _passwordController,
                     labelText: l10n.passwordLabel,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) {
+                      if (!_isLoading) {
+                        _handleLogin();
+                      }
+                    },
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 16),
@@ -313,7 +319,7 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.sync, size: 20),
+                                const Icon(Icons.sync_rounded, size: 20),
                                 const SizedBox(width: 6),
                                 Padding(
                                   padding: EdgeInsets.only(

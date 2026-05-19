@@ -13,26 +13,38 @@ Future<void> registerDesktopCustomProtocol() async {
   final scheme = 'stravaauto';
 
   if (Platform.isWindows) {
-    String appPath = Platform.resolvedExecutable;
-    String protocolRegKey = 'Software\\Classes\\$scheme';
-    RegistryValue protocolRegValue = RegistryValue.string('URL Protocol', '');
-    String protocolCmdRegKey = 'shell\\open\\command';
-    RegistryValue protocolCmdRegValue = RegistryValue.string(
-      '',
-      '"$appPath" "%1"',
-    );
-    final regKey = Registry.currentUser.createKey(protocolRegKey);
-    regKey.createValue(protocolRegValue);
-    regKey.createKey(protocolCmdRegKey).createValue(protocolCmdRegValue);
+    final appPath = Platform.resolvedExecutable;
+    final protocolRegKey = 'Software\\Classes\\$scheme';
+    final protocolRegValue = RegistryValue.string('URL Protocol', '');
+    final protocolCmdRegKey = 'shell\\open\\command';
+    final protocolCmdRegValue = RegistryValue.string('', '"$appPath" "%1"');
+
+    RegistryKey? regKey;
+    RegistryKey? commandKey;
+    try {
+      regKey = Registry.currentUser.createKey(protocolRegKey);
+      regKey.createValue(protocolRegValue);
+      commandKey = regKey.createKey(protocolCmdRegKey);
+      commandKey.createValue(protocolCmdRegValue);
+    } catch (e) {
+      LogManager().addLog('Protocol Error: $e', isError: true);
+    } finally {
+      commandKey?.close();
+      regKey?.close();
+    }
   } else if (Platform.isLinux) {
-    String appPath =
+    final appPath =
         Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable;
-    String desktopContent =
+    final escapedAppPath = appPath
+        .replaceAll(r'\', r'\\\\')
+        .replaceAll('"', r'\\"')
+        .replaceAll(r'$', r'\\$');
+    final desktopContent =
         """
 [Desktop Entry]
 Name=Strava Auto
 Comment=Automate your Strava data
-Exec=$appPath %u
+Exec="$escapedAppPath" %u
 Icon=com.upstrava
 StartupWMClass=com.upstrava
 Type=Application
@@ -40,7 +52,7 @@ Terminal=false
 MimeType=x-scheme-handler/$scheme;
 Categories=Utility;
 """;
-    String homeDir = Platform.environment['HOME'] ?? "";
+    final homeDir = Platform.environment['HOME'] ?? "";
     if (homeDir.isEmpty) return;
     File iconFile = File(
       p.join(homeDir, '.local/share/icons', 'com.upstrava.png'),

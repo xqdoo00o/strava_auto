@@ -1,16 +1,17 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
-import 'package:get_it/get_it.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:get_it/get_it.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:app_links/app_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'strava_service.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
@@ -21,6 +22,12 @@ import 'coord_fixer.dart';
 import 'strava_setting.dart';
 import 'app_state.dart';
 import 'extension.dart';
+import 'onelap_login_page.dart' deferred as onelap_login;
+import 'onelap_manager.dart' deferred as onelap_manager;
+import 'igp_login_page.dart' deferred as igp_login;
+import 'igp_manager.dart' deferred as igp_manager;
+import 'keep_login_page.dart' deferred as keep_login;
+import 'keep_manager.dart' deferred as keep_manager;
 import "stub_logic.dart"
     if (dart.library.js_interop) "web_logic.dart"
     if (dart.library.io) "native_logic.dart";
@@ -43,11 +50,7 @@ class UpstraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        ThemeManager(),
-        LocaleManager(),
-        CoordManager(),
-      ]),
+      animation: Listenable.merge([ThemeManager(), LocaleManager()]),
       builder: (context, child) {
         return MaterialApp(
           onGenerateTitle: (context) => "Strava Auto",
@@ -242,10 +245,18 @@ class _DashboardPageState extends State<DashboardPage>
   final AppState _appState = GetIt.I<AppState>();
   bool _isUploading = false;
   bool _isDragging = false;
+  Set<String> _visibleThirdPartySyncs = {_thirdPartyOneLap};
+  bool _oneLapLoaded = false;
+  bool _igpLoaded = false;
+  bool _keepLoaded = false;
   final bool _isMobilePlatform =
       defaultTargetPlatform == TargetPlatform.iOS ||
       defaultTargetPlatform == TargetPlatform.android;
   final extensions = ['fit', 'tcx', 'gpx'];
+  static const String _thirdPartySyncPrefsKey = 'home_third_party_syncs';
+  static const String _thirdPartyOneLap = 'onelap';
+  static const String _thirdPartyIGP = 'igp';
+  static const String _thirdPartyKeep = 'keep';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -263,6 +274,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
     _appState.addListener(_handleStateChange);
     _initStrava();
+    unawaited(_initVisibleThirdPartySyncs());
     _initDeepLinks();
     if (!kIsWeb) _initSharingIntent();
   }
@@ -284,6 +296,53 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _addLog(String message, {bool isError = false}) {
     LogManager().addLog(message, isError: isError);
+  }
+
+  Future<void> _initVisibleThirdPartySyncs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final syncs = prefs.getStringList(_thirdPartySyncPrefsKey);
+    final visibleSyncs = syncs?.toSet() ?? {_thirdPartyOneLap};
+    await Future.wait(visibleSyncs.map(_ensureThirdPartySyncLoaded));
+
+    if (mounted) {
+      setState(() {
+        _visibleThirdPartySyncs = visibleSyncs;
+      });
+    }
+  }
+
+  Future<void> _saveVisibleThirdPartySyncs(Set<String> syncs) async {
+    await Future.wait(syncs.map(_ensureThirdPartySyncLoaded));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_thirdPartySyncPrefsKey, syncs.toList());
+    if (mounted) {
+      setState(() {
+        _visibleThirdPartySyncs = syncs;
+      });
+    }
+  }
+
+  Future<void> _ensureThirdPartySyncLoaded(String syncKey) async {
+    switch (syncKey) {
+      case _thirdPartyOneLap:
+        if (_oneLapLoaded) return;
+        await onelap_manager.loadLibrary();
+        await onelap_manager.OneLapManager().init();
+        _oneLapLoaded = true;
+        break;
+      case _thirdPartyIGP:
+        if (_igpLoaded) return;
+        await igp_manager.loadLibrary();
+        await igp_manager.IGPManager().init();
+        _igpLoaded = true;
+        break;
+      case _thirdPartyKeep:
+        if (_keepLoaded) return;
+        await keep_manager.loadLibrary();
+        await keep_manager.KeepManager().init();
+        _keepLoaded = true;
+        break;
+    }
   }
 
   // --- Initialization & Listeners ---
@@ -522,194 +581,34 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
 
-    String tempSportType = 'Default';
     Navigator.of(context).popUntil((route) => route.isFirst);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final theme = Theme.of(context);
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SafeArea(
-                top: false,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight - 12,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, -5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.uploadActivityTitle,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: theme.cardColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Scrollbar(
-                                thumbVisibility: true,
-                                child: ListView.separated(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: files.length,
-                                  separatorBuilder: (_, _) =>
-                                      const SizedBox(height: 6),
-                                  itemBuilder: (context, index) {
-                                    final file = files[index];
-                                    return Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.timeline,
-                                          color: Color(0xFFFC4C02),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            file.name,
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<String>(
-                              showSelectedIcon: false,
-                              style: SegmentedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              segments: [
-                                ButtonSegment(
-                                  value: 'Default',
-                                  label: Text(
-                                    AppLocalizations.of(context)!.defaultStr,
-                                  ),
-                                  icon: const Icon(Icons.star_border),
-                                ),
-                                ButtonSegment(
-                                  value: 'Run',
-                                  label: Text(
-                                    AppLocalizations.of(context)!.run,
-                                  ),
-                                  icon: const Icon(
-                                    Icons.directions_run_rounded,
-                                  ),
-                                ),
-                                ButtonSegment(
-                                  value: 'Ride',
-                                  label: Text(
-                                    AppLocalizations.of(context)!.ride,
-                                  ),
-                                  icon: const Icon(
-                                    Icons.directions_bike_rounded,
-                                  ),
-                                ),
-                              ],
-                              selected: {tempSportType},
-                              onSelectionChanged: (newSelection) {
-                                setModalState(() {
-                                  tempSportType = newSelection.first;
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.cancelButton,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    Navigator.pop(context);
-                                    for (var file in files) {
-                                      await _uploadFile(file, tempSportType);
-                                    }
-                                  },
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.uploadNowButton,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+      builder: (context) => _UploadSheet(files: files, onUpload: _uploadFiles),
     );
   }
 
-  Future<void> _uploadFile(XFile uploadFile, String sportType) async {
+  Future<void> _uploadFiles(List<XFile> files, String sportType) async {
     setState(() {
       _isUploading = true;
     });
 
+    try {
+      for (final file in files) {
+        await _uploadFile(file, sportType);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _uploadFile(XFile uploadFile, String sportType) async {
     final fileName = uploadFile.name;
     _addLog("Starting upload: $fileName...");
     if (CoordManager().gcjCorrection == true) {
@@ -741,16 +640,129 @@ class _DashboardPageState extends State<DashboardPage>
           behavior: SnackBarBehavior.floating,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
     }
   }
 
   // --- UI Components ---
+
+  Future<void> _handleThirdPartyAction({
+    required String? username,
+    required Future<int> Function() syncNow,
+    required Future<void> Function() loadLoginLibrary,
+    required WidgetBuilder loginPageBuilder,
+  }) async {
+    if (username == null) {
+      await loadLoginLibrary();
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: loginPageBuilder));
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    context.showToast(l10n.syncingMessage);
+
+    try {
+      final syncedCount = await syncNow();
+      if (mounted) {
+        context.showToast(l10n.syncSuccessMessage(syncedCount));
+      }
+    } catch (e) {
+      if (mounted) {
+        context.showToast(
+          '${l10n.syncFailedMessage} $e',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _showThirdPartySyncConfigDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selectedSyncs = Set<String>.from(_visibleThirdPartySyncs);
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void toggleSync(String key, bool? checked) {
+              setDialogState(() {
+                if (checked == true) {
+                  selectedSyncs.add(key);
+                } else {
+                  selectedSyncs.remove(key);
+                }
+              });
+            }
+
+            return AlertDialog(
+              title: Text(_homeSyncConfigTitle(context)),
+              contentPadding: const EdgeInsets.only(top: 12),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CheckboxListTile(
+                    value: selectedSyncs.contains(_thirdPartyOneLap),
+                    onChanged: (value) => toggleSync(_thirdPartyOneLap, value),
+                    secondary: _buildThirdPartyLetterIcon(
+                      letter: 'W',
+                      color: const Color(0xFF0054FB),
+                    ),
+                    title: Text(l10n.thirdSyncTitle(l10n.oneLap)),
+                    subtitle: Text(
+                      l10n.thirdSyncSubtitle(l10n.oneLap, l10n.ride),
+                    ),
+                  ),
+                  CheckboxListTile(
+                    value: selectedSyncs.contains(_thirdPartyIGP),
+                    onChanged: (value) => toggleSync(_thirdPartyIGP, value),
+                    secondary: _buildThirdPartyLetterIcon(
+                      letter: 'I',
+                      color: const Color(0xFFFD3C1F),
+                    ),
+                    title: Text(l10n.thirdSyncTitle(l10n.iGPS)),
+                    subtitle: Text(
+                      l10n.thirdSyncSubtitle(l10n.iGPS, l10n.ride),
+                    ),
+                  ),
+                  CheckboxListTile(
+                    value: selectedSyncs.contains(_thirdPartyKeep),
+                    onChanged: (value) => toggleSync(_thirdPartyKeep, value),
+                    secondary: _buildThirdPartyLetterIcon(
+                      letter: 'K',
+                      color: const Color(0xFF483E5F),
+                    ),
+                    title: Text(l10n.thirdSyncTitle(l10n.keep)),
+                    subtitle: Text(l10n.thirdSyncSubtitle(l10n.keep, l10n.run)),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.cancelButton),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, selectedSyncs),
+                  child: Text(l10n.confirmButton),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null) {
+      await _saveVisibleThirdPartySyncs(result);
+    }
+  }
+
+  String _homeSyncConfigTitle(BuildContext context) {
+    return Localizations.localeOf(context).languageCode == 'zh'
+        ? '配置同步项目'
+        : 'Sync Items';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -760,28 +772,27 @@ class _DashboardPageState extends State<DashboardPage>
       builder: (context, child) {
         return Scaffold(
           body: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                // Status Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildStatusCard(theme),
-                ),
-
-                const SizedBox(height: 30),
-
-                // Main Action Area
-                Expanded(
-                  flex: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _buildMainActionArea(theme),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 50,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildStatusCard(theme),
+                          const SizedBox(height: 30),
+                          Expanded(child: _buildMainActionArea(theme)),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 30),
-              ],
+                );
+              },
             ),
           ),
         );
@@ -791,7 +802,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildStatusCard(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: _appState.isConnected
@@ -859,6 +870,13 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            color: _appState.isConnected ? Colors.white : theme.iconTheme.color,
+            tooltip: _homeSyncConfigTitle(context),
+            onPressed: _showThirdPartySyncConfigDialog,
+          ),
+          const SizedBox(width: 7),
+          IconButton(
             icon: const Icon(Icons.settings_rounded),
             color: _appState.isConnected ? Colors.white : theme.iconTheme.color,
             tooltip: AppLocalizations.of(context)!.settingsTooltip,
@@ -869,7 +887,7 @@ class _DashboardPageState extends State<DashboardPage>
             },
           ),
           if (_appState.isConnected) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 7),
             IconButton(
               icon: const Icon(Icons.logout_rounded),
               color: Colors.white,
@@ -911,36 +929,23 @@ class _DashboardPageState extends State<DashboardPage>
       );
     }
 
-    if (_isUploading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ScaleTransition(
-              scale: _pulseAnimation,
-              child: Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFC4C02).withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.cloud_upload_rounded,
-                  size: 60,
-                  color: Color(0xFFFC4C02),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              AppLocalizations.of(context)!.uploading,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ],
+    return Column(
+      children: [
+        _buildThirdPartyActionList(theme),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 180),
+            child: _isUploading
+                ? _buildUploadProgressOverlay(theme)
+                : _buildUploadDropTarget(theme),
+          ),
         ),
-      );
-    }
+      ],
+    );
+  }
 
+  Widget _buildUploadDropTarget(ThemeData theme) {
     return DropTarget(
       onDragDone: (detail) async {
         final validFiles = detail.files.where((file) {
@@ -960,69 +965,480 @@ class _DashboardPageState extends State<DashboardPage>
       onDragExited: (_) => setState(() => _isDragging = false),
       child: GestureDetector(
         onTap: _pickAndUploadFile,
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: _isDragging ? theme.focusColor : theme.cardColor,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: theme.dividerColor.withValues(alpha: 0.5),
-              style: BorderStyle.none,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        child: _buildUploadDropCard(theme),
+      ),
+    );
+  }
+
+  Widget _buildUploadProgressOverlay(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ScaleTransition(
+              scale: _pulseAnimation,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFC4C02).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.cloud_upload_rounded,
+                  size: 48,
+                  color: Color(0xFFFC4C02),
+                ),
               ),
-            ],
-          ),
-          child: CustomPaint(
-            painter: DashedBorderPainter(
-              color: theme.dividerColor,
-              strokeWidth: 2,
-              gap: _isDragging ? 0 : 10,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: _isDragging
-                        ? theme.focusColor
-                        : theme.scaffoldBackgroundColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.add_rounded,
-                    size: 40,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  AppLocalizations.of(context)!.tapToSelect,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Visibility(
-                  visible: !(kIsWeb && _isMobilePlatform),
-                  child: Text(
-                    _isMobilePlatform
-                        ? AppLocalizations.of(context)!.orShare
-                        : AppLocalizations.of(context)!.orDrag,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.hintColor,
+            const SizedBox(height: 20),
+            Text(
+              AppLocalizations.of(context)!.uploading,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThirdPartyActionList(ThemeData theme) {
+    final listenables = <Listenable>[LocaleManager()];
+    if (_oneLapLoaded) listenables.add(onelap_manager.OneLapManager());
+    if (_igpLoaded) listenables.add(igp_manager.IGPManager());
+    if (_keepLoaded) listenables.add(keep_manager.KeepManager());
+
+    return ListenableBuilder(
+      listenable: Listenable.merge(listenables),
+      builder: (context, _) {
+        final l10n = AppLocalizations.of(context)!;
+        final tiles = <Widget>[];
+
+        void addSpacing() {
+          if (tiles.isNotEmpty) {
+            tiles.add(const SizedBox(height: 10));
+          }
+        }
+
+        if (_visibleThirdPartySyncs.contains(_thirdPartyOneLap) &&
+            _oneLapLoaded) {
+          final manager = onelap_manager.OneLapManager();
+          addSpacing();
+          tiles.add(
+            _buildThirdPartyActionTile(
+              theme: theme,
+              leading: _buildThirdPartyLetterIcon(
+                letter: 'W',
+                color: const Color(0xFF0054FB),
+              ),
+              title: l10n.thirdSyncTitle(l10n.oneLap),
+              subtitle:
+                  manager.username ??
+                  l10n.thirdSyncSubtitle(l10n.oneLap, l10n.ride),
+              isConnected: manager.username != null,
+              isSyncing: manager.isSyncing,
+              onTap: manager.isSyncing
+                  ? null
+                  : () => _handleThirdPartyAction(
+                      username: manager.username,
+                      syncNow: manager.syncNow,
+                      loadLoginLibrary: onelap_login.loadLibrary,
+                      loginPageBuilder: (_) => onelap_login.OneLapLoginPage(),
                     ),
+            ),
+          );
+        }
+
+        if (_visibleThirdPartySyncs.contains(_thirdPartyIGP) && _igpLoaded) {
+          final manager = igp_manager.IGPManager();
+          addSpacing();
+          tiles.add(
+            _buildThirdPartyActionTile(
+              theme: theme,
+              leading: _buildThirdPartyLetterIcon(
+                letter: 'I',
+                color: const Color(0xFFFD3C1F),
+              ),
+              title: l10n.thirdSyncTitle(l10n.iGPS),
+              subtitle:
+                  manager.username ??
+                  l10n.thirdSyncSubtitle(l10n.iGPS, l10n.ride),
+              isConnected: manager.username != null,
+              isSyncing: manager.isSyncing,
+              onTap: manager.isSyncing
+                  ? null
+                  : () => _handleThirdPartyAction(
+                      username: manager.username,
+                      syncNow: manager.syncNow,
+                      loadLoginLibrary: igp_login.loadLibrary,
+                      loginPageBuilder: (_) => igp_login.IGPLoginPage(),
+                    ),
+            ),
+          );
+        }
+
+        if (_visibleThirdPartySyncs.contains(_thirdPartyKeep) && _keepLoaded) {
+          final manager = keep_manager.KeepManager();
+          addSpacing();
+          tiles.add(
+            _buildThirdPartyActionTile(
+              theme: theme,
+              leading: _buildThirdPartyLetterIcon(
+                letter: 'K',
+                color: const Color(0xFF483E5F),
+              ),
+              title: l10n.thirdSyncTitle(l10n.keep),
+              subtitle:
+                  manager.username ??
+                  l10n.thirdSyncSubtitle(l10n.keep, l10n.run),
+              isConnected: manager.username != null,
+              isSyncing: manager.isSyncing,
+              onTap: manager.isSyncing
+                  ? null
+                  : () => _handleThirdPartyAction(
+                      username: manager.username,
+                      syncNow: manager.syncNow,
+                      loadLoginLibrary: keep_login.loadLibrary,
+                      loginPageBuilder: (_) => keep_login.KeepLoginPage(),
+                    ),
+            ),
+          );
+        }
+
+        return Column(children: tiles);
+      },
+    );
+  }
+
+  Widget _buildThirdPartyActionTile({
+    required ThemeData theme,
+    Widget? leading,
+    required String title,
+    required String subtitle,
+    required bool isConnected,
+    required bool isSyncing,
+    required VoidCallback? onTap,
+  }) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        leading:
+            leading ?? const Icon(Icons.sync_rounded, color: Color(0xFFFC4C02)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: isSyncing
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isConnected)
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 16,
+                    ),
+                  if (isConnected) const SizedBox(width: 8),
+                  Icon(
+                    isConnected ? Icons.sync_rounded : Icons.chevron_right,
+                    size: isConnected ? 20 : null,
+                  ),
+                ],
+              ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildThirdPartyLetterIcon({
+    required String letter,
+    required Color color,
+  }) {
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Text(
+        letter,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadDropCard(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: _isDragging ? theme.focusColor : theme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.5),
+          style: BorderStyle.none,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: DashedBorderPainter(
+          color: theme.dividerColor,
+          strokeWidth: 2,
+          gap: _isDragging ? 0 : 10,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _isDragging
+                    ? theme.focusColor
+                    : theme.scaffoldBackgroundColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 40,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              AppLocalizations.of(context)!.tapToSelect,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Visibility(
+              visible: !(kIsWeb && _isMobilePlatform),
+              child: Text(
+                _isMobilePlatform
+                    ? AppLocalizations.of(context)!.orShare
+                    : AppLocalizations.of(context)!.orDrag,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UploadSheet extends StatefulWidget {
+  final List<XFile> files;
+  final Future<void> Function(List<XFile> files, String sportType) onUpload;
+
+  const _UploadSheet({required this.files, required this.onUpload});
+
+  @override
+  State<_UploadSheet> createState() => _UploadSheetState();
+}
+
+class _UploadSheetState extends State<_UploadSheet> {
+  String _sportType = 'Default';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SafeArea(
+          top: false,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight - 12,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.uploadActivityTitle,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(child: _UploadFileList(files: widget.files)),
+                    const SizedBox(height: 20),
+                    _SportTypeSelector(
+                      sportType: _sportType,
+                      onChanged: (sportType) {
+                        setState(() {
+                          _sportType = sportType;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(l10n.cancelButton),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await widget.onUpload(widget.files, _sportType);
+                            },
+                            child: Text(l10n.uploadNowButton),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UploadFileList extends StatelessWidget {
+  final List<XFile> files;
+
+  const _UploadFileList({required this.files});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Scrollbar(
+        thumbVisibility: true,
+        child: ListView.separated(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          itemCount: files.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 6),
+          itemBuilder: (context, index) {
+            final file = files[index];
+            return Row(
+              children: [
+                const Icon(Icons.timeline, color: Color(0xFFFC4C02)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    file.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
-            ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SportTypeSelector extends StatelessWidget {
+  final String sportType;
+  final ValueChanged<String> onChanged;
+
+  const _SportTypeSelector({required this.sportType, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
+        segments: [
+          ButtonSegment(
+            value: 'Default',
+            label: Text(l10n.defaultStr),
+            icon: const Icon(Icons.star_border),
+          ),
+          ButtonSegment(
+            value: 'Run',
+            label: Text(l10n.run),
+            icon: const Icon(Icons.directions_run_rounded),
+          ),
+          ButtonSegment(
+            value: 'Ride',
+            label: Text(l10n.ride),
+            icon: const Icon(Icons.directions_bike_rounded),
+          ),
+        ],
+        selected: {sportType},
+        onSelectionChanged: (newSelection) => onChanged(newSelection.first),
       ),
     );
   }

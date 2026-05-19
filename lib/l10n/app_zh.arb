@@ -26,7 +26,7 @@
   "stravaLabel": "客户 ID/密钥",
   "stravaChangeTip": "Strava API 变更，请重新连接 Strava 账号。",
   "noValidFiles": "未发现可用文件",
-  "experimentalSection": "实验性功能",
+  "thirdPartySync": "运动平台同步",
   "oneLap": "顽鹿",
   "iGPS": "迹驰",
   "keep": "Keep",

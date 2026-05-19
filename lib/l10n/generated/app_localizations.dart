@@ -278,11 +278,11 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancelButton;
 
-  /// No description provided for @experimentalSection.
+  /// No description provided for @thirdPartySync.
   ///
   /// In en, this message translates to:
-  /// **'Experimental Features'**
-  String get experimentalSection;
+  /// **'Fitness Platform Sync'**
+  String get thirdPartySync;
 
   /// No description provided for @oneLap.
   ///
