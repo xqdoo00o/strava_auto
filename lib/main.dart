@@ -659,7 +659,10 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     final l10n = AppLocalizations.of(context)!;
-    context.showToast(l10n.syncingMessage);
+    context.showToast(
+      l10n.syncingMessage,
+      duration: const Duration(seconds: 1),
+    );
 
     try {
       final syncedCount = await syncNow();

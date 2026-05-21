@@ -113,7 +113,10 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
       _isLoading = true;
     });
 
-    context.showToast(l10n.syncingMessage);
+    context.showToast(
+      l10n.syncingMessage,
+      duration: const Duration(seconds: 1),
+    );
 
     try {
       final syncedCount = await widget.syncNow();
