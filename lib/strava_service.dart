@@ -149,8 +149,10 @@ class StravaService {
   Future<String> uploadStravaFile(XFile file, String sportType) async {
     if (!isAuthenticated) throw Exception('Not authenticated');
 
-    // Check expiration
-    if (DateTime.now().millisecondsSinceEpoch / 1000 > expiresAt!) {
+    final refreshThreshold =
+        DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/
+        1000;
+    if (refreshThreshold > expiresAt!) {
       await _refreshToken();
     }
 

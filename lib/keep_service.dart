@@ -197,7 +197,7 @@ class KeepService {
         }
       }
     } else {
-      while (closestElement == null) {
+      while (closestElement == null && startIndex < hrDataList.length) {
         final searchEndIndex = (startIndex + 5).clamp(0, hrDataList.length);
         for (var i = startIndex; i < searchEndIndex; i++) {
           final item = hrDataList[i];
