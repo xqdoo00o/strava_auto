@@ -178,7 +178,7 @@ class KeepManager extends ChangeNotifier {
         try {
           LogManager().addLog("Downloading $fileKey...");
           final savePath = p.join(dirPath, fileKey);
-          final file = await _service.getActivityData(
+          final file = await _service.downloadSportFile(
             activityId,
             savePath,
             sportType,

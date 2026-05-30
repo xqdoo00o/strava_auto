@@ -14,6 +14,7 @@ class OneLapService {
   static const String _baseUrl = kIsWeb
       ? '/proxy/onelap/otm'
       : 'https://otm.onelap.cn';
+  static const String _refreshUrl = '$_baseUrl/api/token';
   static const String _activityListUrl = '$_baseUrl/api/otm/ride_record/list';
   static const String _activityListDetailUrl =
       '$_baseUrl/api/otm/ride_record/analysis/';
@@ -71,6 +72,55 @@ class OneLapService {
         if (responseData is List && responseData.isNotEmpty) {
           final loginData = responseData[0];
           final token = loginData['token'];
+
+          _token = token;
+          final refreshToken = loginData['refresh_token'];
+          return {
+            'success': true,
+            'token': _token,
+            'refreshToken': refreshToken,
+          };
+        } else {
+          return {
+            'success': false,
+            'message': 'Invalid response format: $data',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'HTTP Error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> refresh(String refreshToken) async {
+    final body = jsonEncode({
+      'token': refreshToken,
+      'from': 'web',
+      'to': 'web',
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(_refreshUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        dynamic responseData = data;
+        if (data is Map && data.containsKey('data')) {
+          responseData = data['data'];
+        }
+
+        if (responseData is Map && responseData.isNotEmpty) {
+          final token = responseData['token'];
 
           _token = token;
           return {'success': true, 'token': _token};

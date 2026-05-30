@@ -127,7 +127,7 @@ class KeepService {
     return result;
   }
 
-  Future<XFile> getActivityData(
+  Future<XFile> downloadSportFile(
     String id,
     String savePath,
     String sportType,

@@ -113,6 +113,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iGPS => 'iGPSPORT';
 
   @override
+  String get garmin => 'Garmin';
+
+  @override
   String get keep => 'Keep';
 
   @override

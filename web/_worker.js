@@ -8,11 +8,14 @@ export default {
       "/proxy/igp/service": "https://prod.zh.igpsport.com/service",
       "/proxy/igp/download": "base64url",
       "/proxy/keep": "https://api.gotokeep.com",
+      "/proxy/garmin-cn/connect": "https://connectapi.garmin.cn",
+      "/proxy/garmin-cn/diauth": "https://diauth.garmin.cn",
+      "/proxy/garmin/connect": "https://connectapi.garmin.com",
+      "/proxy/garmin/diauth": "https://diauth.garmin.com",
     };
 
-    const matchedPrefix = Object.keys(proxyMap).find(prefix =>
-      url.pathname.startsWith(prefix)
-    );
+    const matchedPrefix = Object.keys(proxyMap)
+      .find(prefix => url.pathname.startsWith(prefix));
 
     if (matchedPrefix) {
       if (request.method === "OPTIONS") {
@@ -30,7 +33,7 @@ export default {
       const targetBase = proxyMap[matchedPrefix];
       const remainingPath = url.pathname.replace(matchedPrefix, "");
       let targetUrl = targetBase + remainingPath + url.search;
-
+      console.log(targetUrl);
       if (targetBase === "base64url") {
         const encodedUrl = url.searchParams.get("url");
         targetUrl = atob(encodedUrl);

@@ -111,6 +111,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get iGPS => '迹驰';
 
   @override
+  String get garmin => '佳明';
+
+  @override
   String get keep => 'Keep';
 
   @override

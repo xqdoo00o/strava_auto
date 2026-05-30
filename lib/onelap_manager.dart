@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,13 +34,23 @@ class OneLapManager extends ChangeNotifier {
   String? _token;
   int? _tokenExp;
 
+  String? _refreshToken;
+  int? _refreshTokenExp;
+
+  Map<String, dynamic> _tokens = {};
+
   Future<void> init() async {
     await _storage.init();
     await _initDate();
     _username = await _storage.read(key: 'onelap_username');
-    _token = await _storage.read(key: 'onelap_token');
-    _tokenExp =
-        int.tryParse(await _storage.read(key: 'onelap_token_exp') ?? "") ?? 0;
+    final tokens = await _storage.read(key: 'onelap_tokens');
+    if (tokens != null) {
+      _tokens = jsonDecode(tokens);
+      _token = _tokens['onelap_token'];
+      _tokenExp = _tokens['onelap_token_exp'];
+      _refreshToken = _tokens['onelap_refresh_token'];
+      _refreshTokenExp = _tokens['onelap_refresh_token_exp'];
+    }
     notifyListeners();
   }
 
@@ -69,11 +80,15 @@ class OneLapManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future writeToken(String token) async {
+  void writeToken(String key, String token) {
     _token = token;
-    await _storage.write(key: 'onelap_token', value: token);
-    _tokenExp = getJWTTOkenExp(_token!);
-    await _storage.write(key: 'onelap_token_exp', value: _tokenExp!.toString());
+    _tokenExp = getJWTTOkenExp(token);
+    _tokens['onelap_$key'] = token;
+    _tokens['onelap_${key}_exp'] = _tokenExp;
+  }
+
+  Future<void> saveToken() async {
+    await _storage.write(key: 'onelap_tokens', value: jsonEncode(_tokens));
   }
 
   Future<bool> login(String username, String password) async {
@@ -84,7 +99,9 @@ class OneLapManager extends ChangeNotifier {
         await _storage.write(key: 'onelap_username', value: username);
         await _storage.write(key: 'onelap_password', value: password);
         _username = username;
-        await writeToken(result['token']);
+        writeToken('token', result['token']);
+        writeToken('refresh_token', result['refreshToken']);
+        await saveToken();
 
         notifyListeners();
         return true;
@@ -99,11 +116,12 @@ class OneLapManager extends ChangeNotifier {
   Future<void> logout() async {
     await _storage.delete(key: 'onelap_username');
     await _storage.delete(key: 'onelap_password');
-    await _storage.delete(key: 'onelap_token');
-    await _storage.delete(key: 'onelap_token_exp');
-    _username = null;
+    await _storage.delete(key: 'onelap_tokens');
     _token = null;
     _tokenExp = null;
+    _refreshToken = null;
+    _refreshTokenExp = null;
+    _tokens.clear();
     notifyListeners();
   }
 
@@ -123,6 +141,18 @@ class OneLapManager extends ChangeNotifier {
       // 1. Get credentials
       if (_token != null && _tokenExp != null && _tokenExp! > nowTime) {
         _service.token = _token!;
+      } else if (_refreshToken != null &&
+          _refreshTokenExp != null &&
+          _refreshTokenExp! > nowTime) {
+        final refreshResult = await _service.refresh(_refreshToken!);
+        if (refreshResult['success'] != true) {
+          LogManager().addLog("OneLap Sync Failed: Refresh error.");
+          throw Exception(
+            "Refresh failed: ${refreshResult['message'] ?? 'Unknown error'}",
+          );
+        }
+        writeToken('token', refreshResult['token']);
+        await saveToken();
       } else {
         final username = await _storage.read(key: 'onelap_username');
         final password = await _storage.read(key: 'onelap_password');
@@ -141,7 +171,9 @@ class OneLapManager extends ChangeNotifier {
             "Login failed: ${loginResult['message'] ?? 'Unknown error'}",
           );
         }
-        await writeToken(loginResult['token']);
+        writeToken('token', loginResult['token']);
+        writeToken('refresh_token', loginResult['refreshToken']);
+        await saveToken();
       }
 
       // 3. Fetch list

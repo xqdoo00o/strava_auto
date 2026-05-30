@@ -8,6 +8,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'password_field.dart';
 
 typedef LocalizedTextBuilder = String Function(AppLocalizations l10n);
+typedef ThirdPartyLoginContentBuilder = Widget Function(BuildContext context);
 
 class ThirdPartyLoginPage extends StatefulWidget {
   const ThirdPartyLoginPage({
@@ -23,6 +24,7 @@ class ThirdPartyLoginPage extends StatefulWidget {
     required this.logout,
     required this.setLastSyncDate,
     required this.syncNow,
+    this.customLoginContentBuilder,
   });
 
   final LocalizedTextBuilder platformName;
@@ -36,6 +38,7 @@ class ThirdPartyLoginPage extends StatefulWidget {
   final Future<void> Function() logout;
   final Future<void> Function(DateTime? lastSyncDate) setLastSyncDate;
   final Future<int> Function() syncNow;
+  final ThirdPartyLoginContentBuilder? customLoginContentBuilder;
 
   @override
   State<ThirdPartyLoginPage> createState() => _ThirdPartyLoginPageState();
@@ -189,6 +192,42 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
     }
   }
 
+  Widget _buildConnectedAccountCard(
+    BuildContext context,
+    String username,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.account_circle_outlined,
+            color: theme.colorScheme.primary,
+            size: 32,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              "${AppLocalizations.of(context)!.accountLabel}: $username",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -218,72 +257,84 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                     style: TextStyle(fontSize: 16, color: theme.hintColor),
                   ),
                   const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: widget.accountLabel(l10n),
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.person_outline),
+                  if (widget.customLoginContentBuilder != null &&
+                      username != null) ...[
+                    _buildConnectedAccountCard(context, username, theme),
+                    const SizedBox(height: 32),
+                  ] else if (widget.customLoginContentBuilder != null &&
+                      username == null) ...[
+                    widget.customLoginContentBuilder!(context),
+                    const SizedBox(height: 32),
+                  ] else ...[
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        labelText: widget.accountLabel(l10n),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your account';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your account';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CustomPasswordField(
-                    controller: _passwordController,
-                    labelText: l10n.passwordLabel,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) {
-                      if (!_isLoading) {
-                        _handleLogin();
-                      }
-                    },
-                  ),
-                  if (_errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: TextStyle(color: theme.colorScheme.error),
+                    CustomPasswordField(
+                      controller: _passwordController,
+                      labelText: l10n.passwordLabel,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) {
+                        if (!_isLoading) {
+                          _handleLogin();
+                        }
+                      },
                     ),
-                  ],
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                username != null ? Icons.refresh : Icons.login,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 6),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: kIsWeb ? 2.0 : 0.0,
-                                ),
-                                child: Text(
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
                                   username != null
-                                      ? l10n.reconnectButton
-                                      : l10n.connectSyncButton,
+                                      ? Icons.refresh
+                                      : Icons.login,
+                                  size: 20,
                                 ),
-                              ),
-                            ],
-                          ),
-                  ),
-                  const SizedBox(height: 16),
+                                const SizedBox(width: 6),
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: kIsWeb ? 2.0 : 0.0,
+                                  ),
+                                  child: Text(
+                                    username != null
+                                        ? l10n.reconnectButton
+                                        : l10n.connectSyncButton,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   if (username != null) ...[
                     ElevatedButton.icon(
                       onPressed: () => _pickDate(context),

@@ -26,6 +26,8 @@ import 'onelap_login_page.dart' deferred as onelap_login;
 import 'onelap_manager.dart' deferred as onelap_manager;
 import 'igp_login_page.dart' deferred as igp_login;
 import 'igp_manager.dart' deferred as igp_manager;
+import 'garmin_login_page.dart' deferred as garmin_login;
+import 'garmin_manager.dart' deferred as garmin_manager;
 import 'keep_login_page.dart' deferred as keep_login;
 import 'keep_manager.dart' deferred as keep_manager;
 import "stub_logic.dart"
@@ -249,6 +251,7 @@ class _DashboardPageState extends State<DashboardPage>
   bool _oneLapLoaded = false;
   bool _igpLoaded = false;
   bool _keepLoaded = false;
+  bool _garminLoaded = false;
   final bool _isMobilePlatform =
       defaultTargetPlatform == TargetPlatform.iOS ||
       defaultTargetPlatform == TargetPlatform.android;
@@ -257,6 +260,7 @@ class _DashboardPageState extends State<DashboardPage>
   static const String _thirdPartyOneLap = 'onelap';
   static const String _thirdPartyIGP = 'igp';
   static const String _thirdPartyKeep = 'keep';
+  static const String _thirdPartyGarmin = 'garmin';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -341,6 +345,12 @@ class _DashboardPageState extends State<DashboardPage>
         await keep_manager.loadLibrary();
         await keep_manager.KeepManager().init();
         _keepLoaded = true;
+        break;
+      case _thirdPartyGarmin:
+        if (_garminLoaded) return;
+        await garmin_manager.loadLibrary();
+        await garmin_manager.GarminManager().init();
+        _garminLoaded = true;
         break;
     }
   }
@@ -729,6 +739,16 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   CheckboxListTile(
+                    value: selectedSyncs.contains(_thirdPartyGarmin),
+                    onChanged: (value) => toggleSync(_thirdPartyGarmin, value),
+                    secondary: _buildThirdPartyLetterIcon(
+                      letter: 'G',
+                      color: const Color(0xFF11ADEB),
+                    ),
+                    title: Text(l10n.thirdSyncTitle(l10n.garmin)),
+                    subtitle: Text(l10n.thirdSyncSubtitle(l10n.garmin, l10n.ride)),
+                  ),
+                  CheckboxListTile(
                     value: selectedSyncs.contains(_thirdPartyKeep),
                     onChanged: (value) => toggleSync(_thirdPartyKeep, value),
                     secondary: _buildThirdPartyLetterIcon(
@@ -1007,6 +1027,7 @@ class _DashboardPageState extends State<DashboardPage>
     final listenables = <Listenable>[LocaleManager()];
     if (_oneLapLoaded) listenables.add(onelap_manager.OneLapManager());
     if (_igpLoaded) listenables.add(igp_manager.IGPManager());
+    if (_garminLoaded) listenables.add(garmin_manager.GarminManager());
     if (_keepLoaded) listenables.add(keep_manager.KeepManager());
 
     return ListenableBuilder(
@@ -1073,6 +1094,33 @@ class _DashboardPageState extends State<DashboardPage>
                       syncNow: manager.syncNow,
                       loadLoginLibrary: igp_login.loadLibrary,
                       loginPageBuilder: (_) => igp_login.IGPLoginPage(),
+                    ),
+            ),
+          );
+        }
+        if (_visibleThirdPartySyncs.contains(_thirdPartyGarmin) && _garminLoaded) {
+          final manager = garmin_manager.GarminManager();
+          addSpacing();
+          tiles.add(
+            _buildThirdPartyActionTile(
+              theme: theme,
+              leading: _buildThirdPartyLetterIcon(
+                letter: 'G',
+                color: const Color(0xFF11ADEB),
+              ),
+              title: l10n.thirdSyncTitle(l10n.garmin),
+              subtitle:
+                  manager.username ??
+                  l10n.thirdSyncSubtitle(l10n.garmin, l10n.ride),
+              isConnected: manager.username != null,
+              isSyncing: manager.isSyncing,
+              onTap: manager.isSyncing
+                  ? null
+                  : () => _handleThirdPartyAction(
+                      username: manager.username,
+                      syncNow: manager.syncNow,
+                      loadLoginLibrary: garmin_login.loadLibrary,
+                      loginPageBuilder: (_) => garmin_login.GarminLoginPage(),
                     ),
             ),
           );

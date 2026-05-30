@@ -302,6 +302,12 @@ abstract class AppLocalizations {
   /// **'iGPSPORT'**
   String get iGPS;
 
+  /// No description provided for @garmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Garmin'**
+  String get garmin;
+
   /// No description provided for @keep.
   ///
   /// In en, this message translates to:

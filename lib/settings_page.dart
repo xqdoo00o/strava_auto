@@ -7,6 +7,8 @@ import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
 import 'igp_login_page.dart';
 import 'igp_manager.dart';
+import 'garmin_login_page.dart';
+import 'garmin_manager.dart';
 import 'keep_login_page.dart';
 import 'keep_manager.dart';
 import 'app_state.dart';
@@ -257,6 +259,57 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 10),
+          AnimatedBuilder(
+            animation: Listenable.merge([GarminManager(), LocaleManager()]),
+            builder: (context, _) {
+              final isConnected = GarminManager().username != null;
+              final subtitle = isConnected
+                  ? GarminManager().username!
+                  : AppLocalizations.of(context)!.thirdSyncSubtitle(
+                      AppLocalizations.of(context)!.garmin,
+                      AppLocalizations.of(context)!.ride,
+                    );
+
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: _buildThirdPartyLetterIcon(
+                    letter: 'G',
+                    color: const Color(0xFF11ADEB),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!.thirdSyncTitle(AppLocalizations.of(context)!.garmin),
+                  ),
+                  subtitle: Text(subtitle),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isConnected)
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
+                        ),
+                      if (isConnected) const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GarminLoginPage(),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          
           const SizedBox(height: 10),
           AnimatedBuilder(
             animation: Listenable.merge([KeepManager(), LocaleManager()]),
