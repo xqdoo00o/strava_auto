@@ -10,9 +10,10 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 - **运动类型设置**：上传时可选择默认类型跑步或骑行。
 - **Strava 授权登录**：通过 Strava API 授权连接账号，无需手动填写 Token。
 - **坐标纠偏**：可将 GCJ-02 坐标转换为 Strava 常用的 WGS84 坐标。
-- **顽鹿同步**：登录顽鹿账号后，可按日期筛选并同步骑行活动到 Strava。
-- **iGPSPORT 同步**：登录 iGPSPORT 账号后，可按日期筛选并同步骑行活动到 Strava。
-- **Keep 同步**：登录 Keep 账号后，可按日期筛选并同步跑步活动到 Strava，适合“小米/华为/OPPO 运动健康 -> Keep -> Strava”的数据流转。
+- **运动平台同步**：登录对应运动平台账号后，可按日期筛选活动并同步到 Strava。
+- **顽鹿/iGPSPORT**：支持同步骑行活动。
+- **佳明中国**：支持同步跑步/骑行活动。
+- **Keep**：支持同步跑步/骑行活动，适合“小米/华为/OPPO 运动健康 -> Keep -> Strava”的数据流转。
 - **多平台支持**：适配 Android、iOS、Web、Windows、macOS、Linux。
 - **多语言与主题**：支持简体中文、英文，以及系统深色模式。
 
@@ -79,7 +80,7 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 
 ## 免责声明
 
-本项目为个人开源项目，与 Strava、OneLap、iGPSPORT、Keep 官方均无任何关联。
+本项目为个人开源项目，与 Strava、OneLap、iGPSPORT、Keep、Garmin 官方均无任何关联。
 
 使用本应用产生的一切后果由用户自行承担，作者不承担任何直接或间接责任。
 
