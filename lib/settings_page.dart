@@ -176,7 +176,7 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: _buildThirdPartyLetterIcon(
                     letter: 'W',
-                    color: const Color(0xFF0054FB),
+                    color: const Color(0xFF0155FF),
                   ),
                   title: Text(
                     AppLocalizations.of(
@@ -226,7 +226,7 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: _buildThirdPartyLetterIcon(
                     letter: 'I',
-                    color: const Color(0xFFFD3C1F),
+                    color: const Color(0xFFFF3C1F),
                   ),
                   title: Text(
                     AppLocalizations.of(
@@ -327,7 +327,7 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: _buildThirdPartyLetterIcon(
                     letter: 'K',
-                    color: const Color(0xFF483E5F),
+                    color: const Color(0xFF4B3E5F),
                   ),
                   title: Text(
                     AppLocalizations.of(

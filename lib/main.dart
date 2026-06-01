@@ -721,7 +721,7 @@ class _DashboardPageState extends State<DashboardPage>
                     onChanged: (value) => toggleSync(_thirdPartyOneLap, value),
                     secondary: _buildThirdPartyLetterIcon(
                       letter: 'W',
-                      color: const Color(0xFF0054FB),
+                      color: const Color(0xFF0155FF),
                     ),
                     title: Text(l10n.thirdSyncTitle(l10n.oneLap)),
                     subtitle: Text(
@@ -733,7 +733,7 @@ class _DashboardPageState extends State<DashboardPage>
                     onChanged: (value) => toggleSync(_thirdPartyIGP, value),
                     secondary: _buildThirdPartyLetterIcon(
                       letter: 'I',
-                      color: const Color(0xFFFD3C1F),
+                      color: const Color(0xFFFF3C1F),
                     ),
                     title: Text(l10n.thirdSyncTitle(l10n.iGPS)),
                     subtitle: Text(
@@ -757,7 +757,7 @@ class _DashboardPageState extends State<DashboardPage>
                     onChanged: (value) => toggleSync(_thirdPartyKeep, value),
                     secondary: _buildThirdPartyLetterIcon(
                       letter: 'K',
-                      color: const Color(0xFF483E5F),
+                      color: const Color(0xFF4B3E5F),
                     ),
                     title: Text(l10n.thirdSyncTitle(l10n.keep)),
                     subtitle: Text(
@@ -1057,7 +1057,7 @@ class _DashboardPageState extends State<DashboardPage>
               theme: theme,
               leading: _buildThirdPartyLetterIcon(
                 letter: 'W',
-                color: const Color(0xFF0054FB),
+                color: const Color(0xFF0155FF),
               ),
               title: l10n.thirdSyncTitle(l10n.oneLap),
               subtitle:
@@ -1085,7 +1085,7 @@ class _DashboardPageState extends State<DashboardPage>
               theme: theme,
               leading: _buildThirdPartyLetterIcon(
                 letter: 'I',
-                color: const Color(0xFFFD3C1F),
+                color: const Color(0xFFFF3C1F),
               ),
               title: l10n.thirdSyncTitle(l10n.iGPS),
               subtitle:
@@ -1147,7 +1147,7 @@ class _DashboardPageState extends State<DashboardPage>
               theme: theme,
               leading: _buildThirdPartyLetterIcon(
                 letter: 'K',
-                color: const Color(0xFF483E5F),
+                color: const Color(0xFF4B3E5F),
               ),
               title: l10n.thirdSyncTitle(l10n.keep),
               subtitle:
