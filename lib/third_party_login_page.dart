@@ -335,15 +335,9 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                     const SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
-                      style: username != null
-                          ? ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.tertiary,
-                              foregroundColor: theme.colorScheme.onTertiary,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            )
-                          : ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
@@ -388,8 +382,8 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.secondary,
-                        foregroundColor: theme.colorScheme.onSecondary,
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
@@ -447,7 +441,7 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                       onPressed: _handleLogout,
                       child: Text(
                         l10n.disconnectAccountButton,
-                        style: TextStyle(color: theme.colorScheme.tertiary),
+                        style: TextStyle(color: Colors.red),
                       ),
                     ),
                   ],

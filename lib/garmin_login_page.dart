@@ -29,42 +29,49 @@ class GarminLoginPage extends StatelessWidget {
       additionalContentBuilder: (context) {
         final l10n = AppLocalizations.of(context)!;
         final isCycling = manager.sportType == GarminManager.ride;
+        final collapsedButtonKey = GlobalKey();
         return PopupMenuButton<String>(
           tooltip: isCycling ? l10n.ride : l10n.run,
           padding: EdgeInsets.zero,
           menuPadding: EdgeInsets.zero,
           borderRadius: BorderRadius.circular(12),
           constraints: const BoxConstraints(minWidth: 100, maxWidth: 100),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: GarminManager.run,
-              padding: EdgeInsets.zero,
-              height: 40,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.directions_run_rounded, size: 20),
-                  const SizedBox(width: 6),
-                  Text(l10n.run),
-                ],
+          itemBuilder: (context) {
+            final menuItemHeight =
+                collapsedButtonKey.currentContext?.size?.height ??
+                kMinInteractiveDimension;
+            return [
+              PopupMenuItem(
+                value: GarminManager.run,
+                padding: EdgeInsets.zero,
+                height: menuItemHeight,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.directions_run_rounded, size: 20),
+                    const SizedBox(width: 6),
+                    Text(l10n.run),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: GarminManager.ride,
-              padding: EdgeInsets.zero,
-              height: 40,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.directions_bike_rounded, size: 20),
-                  const SizedBox(width: 6),
-                  Text(l10n.ride),
-                ],
+              PopupMenuItem(
+                value: GarminManager.ride,
+                padding: EdgeInsets.zero,
+                height: menuItemHeight,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.directions_bike_rounded, size: 20),
+                    const SizedBox(width: 6),
+                    Text(l10n.ride),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ];
+          },
           onSelected: manager.setSportType,
           child: Container(
+            key: collapsedButtonKey,
             width: 100,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             alignment: Alignment.center,
