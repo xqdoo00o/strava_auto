@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:path/path.dart' as p;
@@ -33,14 +34,19 @@ class IGPManager extends ChangeNotifier {
   String? _token;
   int? _tokenExp;
 
+  Map<String, dynamic> _tokens = {};
+
   Future<void> init() async {
     await _storage.init();
     await _initDate();
 
     _username = await _storage.read(key: 'igp_username');
-    _token = await _storage.read(key: 'igp_token');
-    _tokenExp =
-        int.tryParse(await _storage.read(key: 'igp_token_exp') ?? "") ?? 0;
+    final tokens = await _storage.read(key: 'igp_tokens');
+    if (tokens != null) {
+      _tokens = jsonDecode(tokens);
+      _token = _tokens['igp_token'];
+      _tokenExp = _tokens['igp_token_exp'];
+    }
     notifyListeners();
   }
 
@@ -70,11 +76,15 @@ class IGPManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future writeToken(String token) async {
+  void writeToken(String key, String token) {
     _token = token;
-    await _storage.write(key: 'igp_token', value: token);
-    _tokenExp = getJWTTOkenExp(_token!);
-    await _storage.write(key: 'igp_token_exp', value: _tokenExp!.toString());
+    _tokenExp = getJWTTOkenExp(token);
+    _tokens['igp_$key'] = token;
+    _tokens['igp_${key}_exp'] = _tokenExp;
+  }
+
+  Future<void> saveToken() async {
+    await _storage.write(key: 'igp_tokens', value: jsonEncode(_tokens));
   }
 
   Future<bool> login(String username, String password) async {
@@ -85,7 +95,8 @@ class IGPManager extends ChangeNotifier {
         await _storage.write(key: 'igp_username', value: username);
         await _storage.write(key: 'igp_password', value: password);
         _username = username;
-        await writeToken(result['token']);
+        writeToken('token', result['token']);
+        await saveToken();
 
         notifyListeners();
         return true;
@@ -142,7 +153,8 @@ class IGPManager extends ChangeNotifier {
             "Login failed: ${loginResult['message'] ?? 'Unknown error'}",
           );
         }
-        await writeToken(loginResult['token']);
+        writeToken('token', loginResult['token']);
+        await saveToken();
       }
 
       // 3. Fetch list

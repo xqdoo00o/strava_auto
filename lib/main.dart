@@ -512,7 +512,9 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.logoutConfirmationTitle),
-        content: Text(AppLocalizations.of(context)!.logoutConfirmationMessage),
+        content: Text(
+          AppLocalizations.of(context)!.logoutConfirmationMessage('Strava'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -743,10 +745,12 @@ class _DashboardPageState extends State<DashboardPage>
                     onChanged: (value) => toggleSync(_thirdPartyGarmin, value),
                     secondary: _buildThirdPartyLetterIcon(
                       letter: 'G',
-                      color: const Color(0xFF11ADEB),
+                      color: const Color(0xFF11AEED),
                     ),
                     title: Text(l10n.thirdSyncTitle(l10n.garmin)),
-                    subtitle: Text(l10n.thirdSyncSubtitle(l10n.garmin, l10n.ride)),
+                    subtitle: Text(
+                      l10n.thirdSyncSubtitle(l10n.garmin, l10n.sport),
+                    ),
                   ),
                   CheckboxListTile(
                     value: selectedSyncs.contains(_thirdPartyKeep),
@@ -756,7 +760,9 @@ class _DashboardPageState extends State<DashboardPage>
                       color: const Color(0xFF483E5F),
                     ),
                     title: Text(l10n.thirdSyncTitle(l10n.keep)),
-                    subtitle: Text(l10n.thirdSyncSubtitle(l10n.keep, l10n.run)),
+                    subtitle: Text(
+                      l10n.thirdSyncSubtitle(l10n.keep, l10n.sport),
+                    ),
                   ),
                 ],
               ),
@@ -1098,7 +1104,8 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           );
         }
-        if (_visibleThirdPartySyncs.contains(_thirdPartyGarmin) && _garminLoaded) {
+        if (_visibleThirdPartySyncs.contains(_thirdPartyGarmin) &&
+            _garminLoaded) {
           final manager = garmin_manager.GarminManager();
           addSpacing();
           tiles.add(
@@ -1106,14 +1113,20 @@ class _DashboardPageState extends State<DashboardPage>
               theme: theme,
               leading: _buildThirdPartyLetterIcon(
                 letter: 'G',
-                color: const Color(0xFF11ADEB),
+                color: const Color(0xFF11AEED),
               ),
               title: l10n.thirdSyncTitle(l10n.garmin),
               subtitle:
                   manager.username ??
-                  l10n.thirdSyncSubtitle(l10n.garmin, l10n.ride),
+                  l10n.thirdSyncSubtitle(l10n.garmin, l10n.sport),
               isConnected: manager.username != null,
               isSyncing: manager.isSyncing,
+              connectedLeadingAction: manager.username == null
+                  ? null
+                  : _buildKeepSportTypeMenu(
+                      sportType: manager.sportType,
+                      onSelected: manager.setSportType,
+                    ),
               onTap: manager.isSyncing
                   ? null
                   : () => _handleThirdPartyAction(
@@ -1139,9 +1152,15 @@ class _DashboardPageState extends State<DashboardPage>
               title: l10n.thirdSyncTitle(l10n.keep),
               subtitle:
                   manager.username ??
-                  l10n.thirdSyncSubtitle(l10n.keep, l10n.run),
+                  l10n.thirdSyncSubtitle(l10n.keep, l10n.sport),
               isConnected: manager.username != null,
               isSyncing: manager.isSyncing,
+              connectedLeadingAction: manager.username == null
+                  ? null
+                  : _buildKeepSportTypeMenu(
+                      sportType: manager.sportType,
+                      onSelected: manager.setSportType,
+                    ),
               onTap: manager.isSyncing
                   ? null
                   : () => _handleThirdPartyAction(
@@ -1167,11 +1186,15 @@ class _DashboardPageState extends State<DashboardPage>
     required bool isConnected,
     required bool isSyncing,
     required VoidCallback? onTap,
+    Widget? connectedLeadingAction,
   }) {
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: ListTile(
+        contentPadding: connectedLeadingAction != null
+            ? const EdgeInsetsDirectional.only(start: 16, end: 8)
+            : null,
         leading:
             leading ?? const Icon(Icons.sync_rounded, color: Color(0xFFFC4C02)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -1199,9 +1222,52 @@ class _DashboardPageState extends State<DashboardPage>
                     isConnected ? Icons.sync_rounded : Icons.chevron_right,
                     size: isConnected ? 20 : null,
                   ),
+                  if (isConnected && connectedLeadingAction != null) ...[
+                    connectedLeadingAction,
+                  ],
                 ],
               ),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildKeepSportTypeMenu({
+    required String sportType,
+    required ValueChanged<String> onSelected,
+  }) {
+    return PopupMenuButton<String>(
+      tooltip: sportType == keep_manager.KeepManager.ride
+          ? AppLocalizations.of(context)!.ride
+          : AppLocalizations.of(context)!.run,
+      padding: EdgeInsets.zero,
+      menuPadding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(12),
+      constraints: const BoxConstraints(minWidth: 75, maxWidth: 75),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: keep_manager.KeepManager.run,
+          height: 48,
+          padding: EdgeInsets.zero,
+          child: const Center(child: Icon(Icons.directions_run_rounded)),
+        ),
+        PopupMenuItem(
+          value: keep_manager.KeepManager.ride,
+          height: 48,
+          padding: EdgeInsets.zero,
+          child: const Center(child: Icon(Icons.directions_bike_rounded)),
+        ),
+      ],
+      onSelected: onSelected,
+      child: Container(
+        width: 48,
+        height: 48,
+        alignment: Alignment.center,
+        child: Icon(
+          sportType == keep_manager.KeepManager.ride
+              ? Icons.directions_bike_rounded
+              : Icons.directions_run_rounded,
+        ),
       ),
     );
   }

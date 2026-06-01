@@ -268,7 +268,7 @@ class SettingsPage extends StatelessWidget {
                   ? GarminManager().username!
                   : AppLocalizations.of(context)!.thirdSyncSubtitle(
                       AppLocalizations.of(context)!.garmin,
-                      AppLocalizations.of(context)!.ride,
+                      AppLocalizations.of(context)!.sport,
                     );
 
               return Card(
@@ -276,7 +276,7 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: _buildThirdPartyLetterIcon(
                     letter: 'G',
-                    color: const Color(0xFF11ADEB),
+                    color: const Color(0xFF11AEED),
                   ),
                   title: Text(
                     AppLocalizations.of(
@@ -309,7 +309,7 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
-          
+
           const SizedBox(height: 10),
           AnimatedBuilder(
             animation: Listenable.merge([KeepManager(), LocaleManager()]),
@@ -319,7 +319,7 @@ class SettingsPage extends StatelessWidget {
                   ? KeepManager().username!
                   : AppLocalizations.of(context)!.thirdSyncSubtitle(
                       AppLocalizations.of(context)!.keep,
-                      AppLocalizations.of(context)!.run,
+                      AppLocalizations.of(context)!.sport,
                     );
 
               return Card(

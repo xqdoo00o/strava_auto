@@ -19,6 +19,9 @@ class GarminManager extends ChangeNotifier {
   final _storage = AppStorage();
   final _service = GarminService(isCn: true);
   final _stravaService = GetIt.I<StravaService>();
+
+  static const run = 'running';
+  static const ride = 'cycling';
   DateTime? _lastSyncDate;
   DateTime? get lastSyncDate => _lastSyncDate;
 
@@ -27,6 +30,9 @@ class GarminManager extends ChangeNotifier {
 
   String? _username;
   String? get username => _username;
+
+  String _sportType = run;
+  String get sportType => _sportType;
 
   String? _token;
   int? _tokenExp;
@@ -46,6 +52,8 @@ class GarminManager extends ChangeNotifier {
       _refreshToken = _tokens['garmin_refresh_token'];
       _refreshTokenExp = _tokens['garmin_refresh_token_exp'];
     }
+    final storedSportType = await _storage.read(key: 'garmin_sport_type');
+    _sportType = storedSportType == ride ? ride : run;
     notifyListeners();
   }
 
@@ -73,6 +81,13 @@ class GarminManager extends ChangeNotifier {
     );
     _lastSyncDate = lastSyncDate;
     notifyListeners();
+  }
+
+  Future<void> setSportType(String sportType) async {
+    if (sportType != run && sportType != ride) return;
+    _sportType = sportType;
+    notifyListeners();
+    await _storage.write(key: 'garmin_sport_type', value: sportType);
   }
 
   void writeToken(String token) {
@@ -192,7 +207,7 @@ class GarminManager extends ChangeNotifier {
     notifyListeners();
 
     // running: 跑步 cycling: 骑行 swimming: 游泳
-    final sportType = "cycling";
+    final sportType = _sportType;
     int syncedCount = 0;
     try {
       final nowTime =

@@ -191,8 +191,8 @@ abstract class AppLocalizations {
   /// No description provided for @logoutConfirmationMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to disconnect from Strava?'**
-  String get logoutConfirmationMessage;
+  /// **'Are you sure you want to disconnect from {aThirdName}?'**
+  String logoutConfirmationMessage(Object aThirdName);
 
   /// No description provided for @confirmButton.
   ///
@@ -217,6 +217,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ride'**
   String get ride;
+
+  /// No description provided for @sport.
+  ///
+  /// In en, this message translates to:
+  /// **'Sport'**
+  String get sport;
 
   /// No description provided for @createStrava.
   ///

@@ -42,6 +42,7 @@ class OneLapManager extends ChangeNotifier {
   Future<void> init() async {
     await _storage.init();
     await _initDate();
+
     _username = await _storage.read(key: 'onelap_username');
     final tokens = await _storage.read(key: 'onelap_tokens');
     if (tokens != null) {

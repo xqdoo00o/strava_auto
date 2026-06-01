@@ -24,6 +24,7 @@ class ThirdPartyLoginPage extends StatefulWidget {
     required this.logout,
     required this.setLastSyncDate,
     required this.syncNow,
+    this.additionalContentBuilder,
     this.customLoginContentBuilder,
   });
 
@@ -38,6 +39,7 @@ class ThirdPartyLoginPage extends StatefulWidget {
   final Future<void> Function() logout;
   final Future<void> Function(DateTime? lastSyncDate) setLastSyncDate;
   final Future<int> Function() syncNow;
+  final ThirdPartyLoginContentBuilder? additionalContentBuilder;
   final ThirdPartyLoginContentBuilder? customLoginContentBuilder;
 
   @override
@@ -101,6 +103,38 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
           FocusScope.of(context).unfocus();
           context.showToast(l10n.loginSuccess(widget.platformName(l10n)));
         }
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final l10n = AppLocalizations.of(context)!;
+    final platformName = widget.platformName(l10n);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.logoutConfirmationTitle),
+        content: Text(l10n.logoutConfirmationMessage(platformName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.confirmButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await widget.logout();
+    if (mounted) {
+      setState(() {
+        _usernameController.clear();
+        _passwordController.clear();
       });
     }
   }
@@ -301,9 +335,15 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                     const SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                      style: username != null
+                          ? ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.tertiary,
+                              foregroundColor: theme.colorScheme.onTertiary,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            )
+                          : ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
@@ -348,54 +388,66 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
+                        backgroundColor: theme.colorScheme.secondary,
+                        foregroundColor: theme.colorScheme.onSecondary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _handleSyncNow,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.tertiary,
-                        foregroundColor: theme.colorScheme.onTertiary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
-                          ? SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.colorScheme.onTertiary,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.sync_rounded, size: 20),
-                                const SizedBox(width: 6),
-                                Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: kIsWeb ? 2.0 : 0.0,
-                                  ),
-                                  child: Text(l10n.syncNowButton),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleSyncNow,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF5B8296),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
                                 ),
-                              ],
+                              ),
+                              child: _isLoading
+                                  ? SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFF5B8296),
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.sync_rounded,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Padding(
+                                          padding: EdgeInsets.only(
+                                            bottom: kIsWeb ? 2.0 : 0.0,
+                                          ),
+                                          child: Text(l10n.syncNowButton),
+                                        ),
+                                      ],
+                                    ),
                             ),
+                          ),
+                          if (widget.additionalContentBuilder != null) ...[
+                            const SizedBox(width: 8),
+                            widget.additionalContentBuilder!(context),
+                          ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () async {
-                        await widget.logout();
-                        setState(() {
-                          _usernameController.clear();
-                          _passwordController.clear();
-                        });
-                      },
+                      onPressed: _handleLogout,
                       child: Text(
                         l10n.disconnectAccountButton,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: theme.colorScheme.tertiary),
                       ),
                     ),
                   ],

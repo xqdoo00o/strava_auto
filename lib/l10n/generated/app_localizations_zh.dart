@@ -54,7 +54,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logoutConfirmationTitle => '断开连接？';
 
   @override
-  String get logoutConfirmationMessage => '确定要断开与 Strava 的连接吗？';
+  String logoutConfirmationMessage(Object aThirdName) {
+    return '确定要断开与 $aThirdName 的连接吗？';
+  }
 
   @override
   String get confirmButton => '确定';
@@ -67,6 +69,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ride => '骑行';
+
+  @override
+  String get sport => '运动';
 
   @override
   String get createStrava => '创建 API';
@@ -142,7 +147,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String thirdLoginDescription(Object aThirdName, Object sportName) {
-    return '连接您的$aThirdName账号以同步$sportName活动到 Strava。';
+    return '连接您的$aThirdName账号以同步$sportName记录到 Strava。';
   }
 
   @override

@@ -54,8 +54,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logoutConfirmationTitle => 'Disconnect?';
 
   @override
-  String get logoutConfirmationMessage =>
-      'Are you sure you want to disconnect from Strava?';
+  String logoutConfirmationMessage(Object aThirdName) {
+    return 'Are you sure you want to disconnect from $aThirdName?';
+  }
 
   @override
   String get confirmButton => 'Confirm';
@@ -68,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ride => 'Ride';
+
+  @override
+  String get sport => 'Sport';
 
   @override
   String get createStrava => 'Create API';

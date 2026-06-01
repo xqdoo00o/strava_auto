@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:path/path.dart' as p;
@@ -21,6 +22,9 @@ class KeepManager extends ChangeNotifier {
   final _storage = AppStorage();
   final _service = KeepService();
   final _stravaService = GetIt.I<StravaService>();
+
+  static const run = 'running';
+  static const ride = 'cycling';
   DateTime? _lastSyncDate;
   DateTime? get lastSyncDate => _lastSyncDate;
 
@@ -30,17 +34,27 @@ class KeepManager extends ChangeNotifier {
   String? _username;
   String? get username => _username;
 
+  String _sportType = run;
+  String get sportType => _sportType;
+
   String? _token;
   int? _tokenExp;
+
+  Map<String, dynamic> _tokens = {};
 
   Future<void> init() async {
     await _storage.init();
     await _initDate();
 
     _username = await _storage.read(key: 'keep_username');
-    _token = await _storage.read(key: 'keep_token');
-    _tokenExp =
-        int.tryParse(await _storage.read(key: 'keep_token_exp') ?? "") ?? 0;
+    final tokens = await _storage.read(key: 'keep_tokens');
+    if (tokens != null) {
+      _tokens = jsonDecode(tokens);
+      _token = _tokens['keep_token'];
+      _tokenExp = _tokens['keep_token_exp'];
+    }
+    final storedSportType = await _storage.read(key: 'keep_sport_type');
+    _sportType = storedSportType == ride ? ride : run;
     notifyListeners();
   }
 
@@ -70,11 +84,22 @@ class KeepManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future writeToken(String token) async {
+  void writeToken(String key, String token) {
     _token = token;
-    await _storage.write(key: 'keep_token', value: token);
-    _tokenExp = getJWTTOkenExp(_token!);
-    await _storage.write(key: 'keep_token_exp', value: _tokenExp!.toString());
+    _tokenExp = getJWTTOkenExp(token);
+    _tokens['keep_$key'] = token;
+    _tokens['keep_${key}_exp'] = _tokenExp;
+  }
+
+  Future<void> saveToken() async {
+    await _storage.write(key: 'keep_tokens', value: jsonEncode(_tokens));
+  }
+
+  Future<void> setSportType(String sportType) async {
+    if (sportType != run && sportType != ride) return;
+    _sportType = sportType;
+    notifyListeners();
+    await _storage.write(key: 'keep_sport_type', value: sportType);
   }
 
   Future<bool> login(String username, String password) async {
@@ -85,7 +110,8 @@ class KeepManager extends ChangeNotifier {
         await _storage.write(key: 'keep_username', value: username);
         await _storage.write(key: 'keep_password', value: password);
         _username = username;
-        await writeToken(result['token']);
+        writeToken('token', result['token']);
+        await saveToken();
 
         notifyListeners();
         return true;
@@ -100,11 +126,11 @@ class KeepManager extends ChangeNotifier {
   Future<void> logout() async {
     await _storage.delete(key: 'keep_username');
     await _storage.delete(key: 'keep_password');
-    await _storage.delete(key: 'keep_token');
-    await _storage.delete(key: 'keep_token_exp');
+    await _storage.delete(key: 'keep_tokens');
     _username = null;
     _token = null;
     _tokenExp = null;
+    _tokens.clear();
     notifyListeners();
   }
 
@@ -114,7 +140,7 @@ class KeepManager extends ChangeNotifier {
     notifyListeners();
 
     // running: 跑步 cycling: 骑行 training: 游泳锻炼等其他
-    final sportType = "running";
+    final sportType = _sportType;
     int syncedCount = 0;
     try {
       final nowTime =
@@ -144,7 +170,8 @@ class KeepManager extends ChangeNotifier {
             "Login failed: ${loginResult['message'] ?? 'Unknown error'}",
           );
         }
-        await writeToken(loginResult['token']);
+        writeToken('token', loginResult['token']);
+        await saveToken();
       }
 
       // 3. Fetch list
