@@ -3,6 +3,7 @@ import 'theme_manager.dart';
 import 'locale_manager.dart';
 import 'coord_manager.dart';
 import 'strava_setting.dart';
+import 'strava_service.dart';
 import 'onelap_login_page.dart';
 import 'onelap_manager.dart';
 import 'igp_login_page.dart';
@@ -111,25 +112,70 @@ class SettingsPage extends StatelessWidget {
             },
           ),
           const SizedBox(height: 10),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              leading: const Icon(Icons.api, color: Color(0xFFFC4C02)),
-              title: Text("Strava API"),
-              subtitle: Text(AppLocalizations.of(context)!.stravaLabel),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () async {
-                final bool shouldDisconnect =
-                    await StravaConfigUtils.showStravaConfigDialog(context);
-                if (shouldDisconnect) {
-                  if (!context.mounted) return;
-                  context.showToast(
-                    AppLocalizations.of(context)!.stravaChangeTip,
-                  );
-                  appState.setConnected(false);
-                }
-              },
-            ),
+          AnimatedBuilder(
+            animation: GetIt.I<StravaService>(),
+            builder: (context, _) {
+              final stravaService = GetIt.I<StravaService>();
+              final isWebView =
+                  stravaService.uploadMode == StravaUploadMode.webView;
+              return Column(
+                children: [
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      leading: Icon(
+                        isWebView ? Icons.web_rounded : Icons.api,
+                        color: const Color(0xFFFC4C02),
+                      ),
+                      title: Text(
+                        AppLocalizations.of(context)!.stravaUploadMethodTitle,
+                      ),
+                      subtitle: Text(
+                        isWebView
+                            ? AppLocalizations.of(
+                                context,
+                              )!.stravaUploadMethodWebView
+                            : AppLocalizations.of(
+                                context,
+                              )!.stravaUploadMethodApi,
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _showStravaUploadModeDialog(context),
+                    ),
+                  ),
+                  if (!isWebView) ...[
+                    const SizedBox(height: 10),
+                    Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.api,
+                          color: Color(0xFFFC4C02),
+                        ),
+                        title: Text("Strava API"),
+                        subtitle: Text(
+                          AppLocalizations.of(context)!.stravaLabel,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () async {
+                          final bool shouldDisconnect =
+                              await StravaConfigUtils.showStravaConfigDialog(
+                                context,
+                              );
+                          if (shouldDisconnect) {
+                            if (!context.mounted) return;
+                            context.showToast(
+                              AppLocalizations.of(context)!.stravaChangeTip,
+                            );
+                            appState.setConnected(false);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           AnimatedBuilder(
@@ -458,6 +504,15 @@ class SettingsPage extends StatelessWidget {
       },
     );
   }
+
+  void _showStravaUploadModeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const _StravaUploadModeDialog();
+      },
+    );
+  }
 }
 
 class _ThemeDialog extends StatelessWidget {
@@ -562,6 +617,68 @@ class _LanguageDialog extends StatelessWidget {
       title: Text(label),
       value: locale?.languageCode,
       activeColor: const Color(0xFFFC4C02),
+    );
+  }
+}
+
+class _StravaUploadModeDialog extends StatelessWidget {
+  const _StravaUploadModeDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final stravaService = GetIt.I<StravaService>();
+    final l10n = AppLocalizations.of(context)!;
+    final isWebViewSupported = stravaService.isWebViewUploadSupported;
+
+    return AlertDialog(
+      title: Text(l10n.stravaUploadMethodTitle),
+      content: RadioGroup<StravaUploadMode>(
+        groupValue: stravaService.uploadMode,
+        onChanged: (value) async {
+          if (value == null) return;
+          if (value == StravaUploadMode.webView && !isWebViewSupported) {
+            context.showToast(l10n.stravaWebViewUnsupported);
+            return;
+          }
+          try {
+            await stravaService.setUploadMode(value);
+          } catch (e) {
+            if (context.mounted) {
+              context.showToast(e.toString());
+            }
+            return;
+          }
+          if (context.mounted) Navigator.pop(context);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<StravaUploadMode>(
+              title: Text(l10n.stravaUploadMethodApi),
+              subtitle: Text(l10n.stravaUploadMethodApiSubtitle),
+              value: StravaUploadMode.api,
+              activeColor: const Color(0xFFFC4C02),
+            ),
+            RadioListTile<StravaUploadMode>(
+              title: Text(l10n.stravaUploadMethodWebView),
+              subtitle: Text(
+                isWebViewSupported
+                    ? l10n.stravaUploadMethodWebViewSubtitle
+                    : l10n.stravaWebViewUnsupported,
+              ),
+              value: StravaUploadMode.webView,
+              activeColor: const Color(0xFFFC4C02),
+              enabled: isWebViewSupported,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancelButton),
+        ),
+      ],
     );
   }
 }

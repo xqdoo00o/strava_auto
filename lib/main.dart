@@ -13,6 +13,11 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'strava_service.dart';
+import 'strava_webview_bridge_native.dart'
+    if (dart.library.js_interop) 'strava_webview_bridge_web.dart';
+import 'strava_auth_iframe_dialog_stub.dart'
+    if (dart.library.js_interop) 'strava_auth_iframe_dialog_web.dart';
+import 'strava_webview_shell.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
 import 'theme_manager.dart';
@@ -39,9 +44,11 @@ final getIt = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final stravaService = StravaService();
+  final stravaWebViewBridge = StravaWebViewBridge();
+  final stravaService = StravaService(webViewBridge: stravaWebViewBridge);
   await stravaService.init();
   getIt.registerSingleton<AppState>(AppState());
+  getIt.registerSingleton<StravaWebViewBridge>(stravaWebViewBridge);
   getIt.registerSingleton<StravaService>(stravaService);
   runApp(const UpstraApp());
 }
@@ -169,6 +176,9 @@ class UpstraApp extends StatelessWidget {
           ),
           themeMode: ThemeManager().themeMode,
           home: const DashboardPage(),
+          builder: (context, child) {
+            return StravaWebViewShell(child: child ?? const SizedBox.shrink());
+          },
           // Fix for "Failed to handle route information"
           onGenerateRoute: (settings) {
             // If this is the auth redirect, show a transient loading page instead of pushing a new DashboardPage
@@ -239,6 +249,8 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   final StravaService _stravaService = GetIt.I<StravaService>();
+  final StravaWebViewBridge _stravaWebViewBridge =
+      GetIt.I<StravaWebViewBridge>();
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
@@ -252,6 +264,7 @@ class _DashboardPageState extends State<DashboardPage>
   bool _igpLoaded = false;
   bool _keepLoaded = false;
   bool _garminLoaded = false;
+  double _statusCardDragDx = 0;
   final bool _isMobilePlatform =
       defaultTargetPlatform == TargetPlatform.iOS ||
       defaultTargetPlatform == TargetPlatform.android;
@@ -277,6 +290,8 @@ class _DashboardPageState extends State<DashboardPage>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     _appState.addListener(_handleStateChange);
+    _stravaService.addListener(_handleStravaServiceChange);
+    _stravaWebViewBridge.addListener(_handleStravaServiceChange);
     _initStrava();
     unawaited(_initVisibleThirdPartySyncs());
     _initDeepLinks();
@@ -289,13 +304,28 @@ class _DashboardPageState extends State<DashboardPage>
     _intentSub?.cancel();
     _pulseController.dispose();
     _appState.removeListener(_handleStateChange);
+    _stravaService.removeListener(_handleStravaServiceChange);
+    _stravaWebViewBridge.removeListener(_handleStravaServiceChange);
     super.dispose();
   }
 
+  bool _isApplyingServiceConnectionState = false;
+
   void _handleStateChange() {
+    if (_isApplyingServiceConnectionState) return;
     if (!_appState.isConnected) {
       _disconnect();
     }
+  }
+
+  void _handleStravaServiceChange() {
+    _applyServiceConnectionState();
+  }
+
+  void _applyServiceConnectionState() {
+    _isApplyingServiceConnectionState = true;
+    _appState.setConnected(_stravaService.isReadyForUpload);
+    _isApplyingServiceConnectionState = false;
   }
 
   void _addLog(String message, {bool isError = false}) {
@@ -359,7 +389,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _initStrava() async {
     try {
-      _appState.setConnected(_stravaService.isAuthenticated);
+      _applyServiceConnectionState();
       if (_appState.isConnected) {
         _addLog("Connected to Strava session.");
       } else {
@@ -478,12 +508,26 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _connectToStrava() async {
+    if (_stravaService.uploadMode == StravaUploadMode.webView) {
+      final shown = StravaWebViewShell.showWebView(context);
+      _addLog("Opened Strava WebView login.");
+      if (!shown && mounted) {
+        context.showToast(
+          AppLocalizations.of(context)!.webViewLoginRequired,
+          duration: const Duration(seconds: 3),
+        );
+      }
+      return;
+    }
+
     if (!_stravaService.hasCredentials) {
       _addLog("Missing Client ID/Secret configuration.", isError: true);
 
       bool shouldDisconnect = await StravaConfigUtils.showStravaConfigDialog(
         context,
       );
+
+      if (!mounted) return;
 
       if (!shouldDisconnect) {
         _addLog("Configuration cancelled by user.");
@@ -492,6 +536,15 @@ class _DashboardPageState extends State<DashboardPage>
     }
     try {
       final url = _stravaService.getAuthorizationUrl();
+      if (kIsWeb && isChromeExtension()) {
+        await showStravaAuthIframeDialog(
+          context,
+          authorizationUrl: url,
+          onCallback: _handleAuthCallback,
+        );
+        _addLog("Opened Strava iframe login.");
+        return;
+      }
       if (await canLaunchUrl(url)) {
         await launchUrl(
           url,
@@ -534,7 +587,11 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _disconnect() async {
-    await _stravaService.logout();
+    if (_stravaService.uploadMode == StravaUploadMode.webView) {
+      await _stravaWebViewBridge.logout();
+    } else {
+      await _stravaService.logout();
+    }
     _addLog("Disconnected from Strava.");
   }
 
@@ -561,21 +618,25 @@ class _DashboardPageState extends State<DashboardPage>
         type: FileType.custom,
         allowedExtensions: extensions,
         allowMultiple: true,
+        withData: true,
       );
-      if (!context.mounted) return;
-      if (result != null && result.xFiles.isNotEmpty) {
-        final validFiles = result.xFiles.where((file) {
+      final ctx = context;
+      if (!ctx.mounted) {
+        return;
+      }
+      if (result != null && result.files.isNotEmpty) {
+        final validPlatformFiles = result.files.where((file) {
           return extensions.contains(getExtension(file.name));
         }).toList();
-        if (validFiles.isEmpty) {
+        if (validPlatformFiles.isEmpty) {
           _addLog("No valid files picked.", isError: true);
-          final ctx = context;
           ctx.showToast(
             AppLocalizations.of(ctx)!.noValidFiles,
             backgroundColor: Colors.red,
           );
           return;
         }
+        final validFiles = validPlatformFiles.map((file) => file.xFile).toList();
         _showUploadDialog(validFiles);
       }
     } catch (e) {
@@ -584,12 +645,16 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _showUploadDialog(List<XFile> files) {
-    if (!_appState.isConnected) {
+    if (!_stravaService.isReadyForUpload) {
       _addLog(
         "Please connect to Strava to upload ${files.first.name}",
         isError: true,
       );
-      context.showToast(AppLocalizations.of(context)!.pleaseConnectFirst);
+      context.showToast(
+        _stravaService.uploadMode == StravaUploadMode.webView
+            ? AppLocalizations.of(context)!.webViewLoginRequired
+            : AppLocalizations.of(context)!.pleaseConnectFirst,
+      );
       return;
     }
 
@@ -824,7 +889,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildStatusCard(ThemeData theme) {
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -921,6 +986,34 @@ class _DashboardPageState extends State<DashboardPage>
         ],
       ),
     );
+
+    if (!_canSwipeStatusCardToWebView) {
+      return card;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) {
+        _statusCardDragDx = 0;
+      },
+      onHorizontalDragUpdate: (details) {
+        _statusCardDragDx += details.primaryDelta ?? 0;
+      },
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        final shouldOpenWebView = velocity > 250 || _statusCardDragDx > 36;
+        _statusCardDragDx = 0;
+        if (shouldOpenWebView) {
+          StravaWebViewShell.showWebView(context);
+        }
+      },
+      child: card,
+    );
+  }
+
+  bool get _canSwipeStatusCardToWebView {
+    return _isMobilePlatform &&
+        _stravaService.uploadMode == StravaUploadMode.webView;
   }
 
   Widget _buildMainActionArea(ThemeData theme) {

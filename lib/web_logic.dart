@@ -1,3 +1,5 @@
+import 'dart:js_interop';
+
 import 'package:web/web.dart' as web;
 
 void clearURLParameter() {
@@ -7,6 +9,21 @@ void clearURLParameter() {
 
 String getRedirectURI() {
   return web.window.location.origin + web.window.location.pathname;
+}
+
+@JS('chrome.runtime.id')
+external JSString? get chromeRuntimeId;
+
+bool isChromeExtension() {
+  try {
+    return chromeRuntimeId != null;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool shouldUseWebProxy() {
+  return !isChromeExtension();
 }
 
 Future<void> registerDesktopCustomProtocol() async {}

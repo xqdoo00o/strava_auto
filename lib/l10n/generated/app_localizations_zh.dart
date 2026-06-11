@@ -86,6 +86,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stravaLabel => '客户 ID/密钥';
 
   @override
+  String get stravaUploadMethodTitle => 'Strava 同步方式';
+
+  @override
+  String get stravaUploadMethodApi => 'Strava API';
+
+  @override
+  String get stravaUploadMethodApiSubtitle => '通过 API Token 同步';
+
+  @override
+  String get stravaUploadMethodWebView => 'WebView';
+
+  @override
+  String get stravaUploadMethodWebViewSubtitle =>
+      '在Strava WebView 中登录，并通过 JS 桥接同步';
+
+  @override
   String get stravaChangeTip => 'Strava API 变更，请重新连接 Strava 账号。';
 
   @override
@@ -285,6 +301,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pleaseConnectFirst => '请先连接到 Strava。';
+
+  @override
+  String get webViewLoginRequired => '请先在 Strava WebView 中登录。';
+
+  @override
+  String get stravaWebViewTitle => 'Strava WebView';
+
+  @override
+  String get stravaWebViewLoginHint => '在这里登录 Strava，登录后右滑返回。';
+
+  @override
+  String get stravaWebViewUnsupported =>
+      'Web端 暂不支持 WebView 上传，请改用 Strava API 上传方式。';
 
   @override
   String get readyToSync => '准备同步活动';

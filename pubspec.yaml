@@ -18,6 +18,7 @@ dependencies:
   fit_tool: ^1.0.5
   flutter:
     sdk: flutter
+  flutter_inappwebview: ^6.1.5
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^10.0.0
@@ -50,10 +51,10 @@ flutter_launcher_icons:
   image_path: "assets/icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
-    generate: true
+    generate: false
     image_path: "assets/icon.png"
-    background_color: "#hex_code"
-    theme_color: "#hex_code"
+    background_color: "#FFFFFF"
+    theme_color: "#FC4C02"
   windows:
     generate: true
     image_path: "assets/icon.png"

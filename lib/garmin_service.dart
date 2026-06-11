@@ -7,6 +7,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 
 class GarminService {
   static const String _iosClientId = 'GCM_IOS_DARK';
@@ -42,11 +43,12 @@ class GarminService {
   String get _domain => isCn ? 'garmin.cn' : 'garmin.com';
   String get _webProxyPrefix => isCn ? '/proxy/garmin-cn' : '/proxy/garmin';
   String get _ssoBaseUrl => 'https://sso.$_domain';
-  String get _diTokenUrl => kIsWeb
+  String get _diTokenUrl => shouldUseWebProxy()
       ? '$_webProxyPrefix/diauth/di-oauth2-service/oauth/token'
       : 'https://diauth.$_domain/di-oauth2-service/oauth/token';
-  String get _connectApiBaseUrl =>
-      kIsWeb ? '$_webProxyPrefix/connect' : 'https://connectapi.$_domain';
+  String get _connectApiBaseUrl => shouldUseWebProxy()
+      ? '$_webProxyPrefix/connect'
+      : 'https://connectapi.$_domain';
   String get _iosServiceUrl => 'https://mobile.integration.$_domain/gcm/ios';
 
   set token(String value) {
@@ -143,8 +145,7 @@ class GarminService {
               'client_id': clientId,
               'refresh_token': refreshToken,
             },
-          )
-          .timeout(const Duration(seconds: 30));
+          );
 
       if (response.statusCode == 429) {
         throw Exception('Garmin token refresh rate limited');
@@ -177,9 +178,7 @@ class GarminService {
 
   Future<Map<String, dynamic>> _getJsonMap(String url) async {
     final response = await _client
-        .get(Uri.parse(url), headers: authHeaders)
-        .timeout(const Duration(seconds: 30));
-
+        .get(Uri.parse(url), headers: authHeaders);
     if (response.statusCode == 401) {
       throw Exception('Garmin authentication failed or token expired');
     }
@@ -219,8 +218,7 @@ class GarminService {
             'rememberMe': true,
             'captchaToken': '',
           }),
-        )
-        .timeout(const Duration(seconds: 30));
+        );
 
     if (response.statusCode == 429) {
       throw Exception('Garmin login rate limited, please try again later');
@@ -281,8 +279,7 @@ class GarminService {
               'grant_type': _diGrantType,
               'service_url': serviceUrl,
             },
-          )
-          .timeout(const Duration(seconds: 30));
+          );
 
       if (response.statusCode == 429) {
         throw Exception('Garmin token exchange rate limited');
@@ -374,8 +371,7 @@ class GarminService {
       ).replace(queryParameters: queryParameters);
 
       final response = await _client
-          .get(uri, headers: authHeaders)
-          .timeout(const Duration(seconds: 30));
+          .get(uri, headers: authHeaders);
       if (response.statusCode == 401) {
         throw Exception('Garmin authentication failed or token expired');
       }
@@ -405,8 +401,7 @@ class GarminService {
       '$_connectApiBaseUrl/download-service/files/activity/$activityId',
     );
     final response = await _client
-        .get(uri, headers: {...authHeaders, 'Accept': '*/*'})
-        .timeout(const Duration(seconds: 30));
+        .get(uri, headers: {...authHeaders, 'Accept': '*/*'});
 
     if (response.statusCode == 401) {
       throw Exception('Garmin authentication failed or token expired');

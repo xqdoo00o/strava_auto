@@ -8,28 +8,62 @@
     "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
-    "icons": [
+    "version": "0.9.9",
+    "manifest_version": 3,
+    "action": {
+        "default_icon": "icons/Icon-192.png"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    },
+    "web_accessible_resources": [
         {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
+            "resources": [
+                "*.wasm",
+                "assets/*",
+                "canvaskit/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
         },
         {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
+            "resources": [
+                "garmin_postmessage.js"
+            ],
+            "matches": [
+                "https://sso.garmin.cn/*"
+            ]
         }
-    ]
+    ],
+    "permissions": [
+        "scripting",
+        "tabs",
+        "webNavigation",
+        "webRequest",
+        "declarativeNetRequest"
+    ],
+    "host_permissions": [
+        "https://*.strava.com/",
+        "https://*.onelap.cn/",
+        "https://*.igpsport.com/",
+        "https://*.aliyuncs.com/",
+        "https://*.garmin.cn/",
+        "https://*.gotokeep.com/"
+    ],
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "ruleset_1",
+                "enabled": true,
+                "path": "rules.json"
+            }
+        ]
+    },
+    "icons": {
+        "128": "icons/Icon-192.png"
+    }
 }

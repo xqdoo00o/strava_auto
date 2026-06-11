@@ -4,21 +4,22 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 import 'coord_fixer.dart';
 import 'package:cross_file/cross_file.dart';
 
 class OneLapService {
-  static const String _loginUrl = kIsWeb
+  static final String _loginUrl = shouldUseWebProxy()
       ? '/proxy/onelap/login'
       : 'https://www.onelap.cn/api/login';
-  static const String _baseUrl = kIsWeb
+  static final String _baseUrl = shouldUseWebProxy()
       ? '/proxy/onelap/otm'
       : 'https://otm.onelap.cn';
-  static const String _refreshUrl = '$_baseUrl/api/token';
-  static const String _activityListUrl = '$_baseUrl/api/otm/ride_record/list';
-  static const String _activityListDetailUrl =
+  static final String _refreshUrl = '$_baseUrl/api/token';
+  static final String _activityListUrl = '$_baseUrl/api/otm/ride_record/list';
+  static final String _activityListDetailUrl =
       '$_baseUrl/api/otm/ride_record/analysis/';
-  static const String _otmUrl =
+  static final String _otmUrl =
       '$_baseUrl/api/otm/ride_record/analysis/fit_content/';
   static const String _secretKey = 'fe9f8382418fcdeb136461cac6acae7b';
 

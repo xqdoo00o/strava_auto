@@ -3,18 +3,19 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:cross_file/cross_file.dart';
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 // import 'coord_fixer.dart';
 
 class IGPService {
-  static const String _baseUrl = kIsWeb
+  static final String _baseUrl = shouldUseWebProxy()
       ? '/proxy/igp/service'
       : 'https://prod.zh.igpsport.com/service';
-  static const String _loginUrl = '$_baseUrl/auth/account/login';
-  static const String _activityBaseUrl =
+  static final String _loginUrl = '$_baseUrl/auth/account/login';
+  static final String _activityBaseUrl =
       '$_baseUrl/web-gateway/web-analyze/activity/';
-  static const String _activityListUrl = '${_activityBaseUrl}queryMyActivity';
-  static const String _downloadUrl = '${_activityBaseUrl}getDownloadUrl/';
-  static const String _webDownloadUrl = '/proxy/igp/download';
+  static final String _activityListUrl = '${_activityBaseUrl}queryMyActivity';
+  static final String _downloadUrl = '${_activityBaseUrl}getDownloadUrl/';
+  static final String _webDownloadUrl = '/proxy/igp/download';
 
   String? _token;
   set token(String value) {
@@ -116,7 +117,7 @@ class IGPService {
         if (data is Map && data.containsKey('data')) {
           final durl = (data['data'] as String?) ?? '';
           if (durl.isNotEmpty) {
-            activity['downloadUrl'] = kIsWeb
+            activity['downloadUrl'] = shouldUseWebProxy()
                 ? "$_webDownloadUrl?url=${Uri.encodeComponent(base64Encode(utf8.encode(durl)))}"
                 : durl;
             if (activity['title'] != null) {

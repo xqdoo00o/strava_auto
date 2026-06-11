@@ -86,6 +86,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stravaLabel => 'Client ID/Secret';
 
   @override
+  String get stravaUploadMethodTitle => 'Strava Sync Method';
+
+  @override
+  String get stravaUploadMethodApi => 'Strava API';
+
+  @override
+  String get stravaUploadMethodApiSubtitle => 'Sync through API tokens';
+
+  @override
+  String get stravaUploadMethodWebView => 'WebView';
+
+  @override
+  String get stravaUploadMethodWebViewSubtitle =>
+      'Log in inside Strava WebView and sync through the JS bridge';
+
+  @override
   String get stravaChangeTip =>
       'Strava API changes: Please reconnect your Strava account.';
 
@@ -286,6 +302,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pleaseConnectFirst => 'Please connect to Strava first.';
+
+  @override
+  String get webViewLoginRequired =>
+      'Please sign in in the Strava WebView first.';
+
+  @override
+  String get stravaWebViewTitle => 'Strava WebView';
+
+  @override
+  String get stravaWebViewLoginHint =>
+      'Sign in to Strava here, then swipe right to return.';
+
+  @override
+  String get stravaWebViewUnsupported =>
+      'WebView upload is not available on Web. Use the Strava API upload method instead.';
 
   @override
   String get readyToSync => 'Ready to sync activities';

@@ -248,6 +248,36 @@ abstract class AppLocalizations {
   /// **'Client ID/Secret'**
   String get stravaLabel;
 
+  /// No description provided for @stravaUploadMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Strava Sync Method'**
+  String get stravaUploadMethodTitle;
+
+  /// No description provided for @stravaUploadMethodApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Strava API'**
+  String get stravaUploadMethodApi;
+
+  /// No description provided for @stravaUploadMethodApiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync through API tokens'**
+  String get stravaUploadMethodApiSubtitle;
+
+  /// No description provided for @stravaUploadMethodWebView.
+  ///
+  /// In en, this message translates to:
+  /// **'WebView'**
+  String get stravaUploadMethodWebView;
+
+  /// No description provided for @stravaUploadMethodWebViewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in inside Strava WebView and sync through the JS bridge'**
+  String get stravaUploadMethodWebViewSubtitle;
+
   /// No description provided for @stravaChangeTip.
   ///
   /// In en, this message translates to:
@@ -613,6 +643,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please connect to Strava first.'**
   String get pleaseConnectFirst;
+
+  /// No description provided for @webViewLoginRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in in the Strava WebView first.'**
+  String get webViewLoginRequired;
+
+  /// No description provided for @stravaWebViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Strava WebView'**
+  String get stravaWebViewTitle;
+
+  /// No description provided for @stravaWebViewLoginHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Strava here, then swipe right to return.'**
+  String get stravaWebViewLoginHint;
+
+  /// No description provided for @stravaWebViewUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'WebView upload is not available on Web. Use the Strava API upload method instead.'**
+  String get stravaWebViewUnsupported;
 
   /// No description provided for @readyToSync.
   ///

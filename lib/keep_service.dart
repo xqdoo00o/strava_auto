@@ -5,18 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 import 'package:xml/xml.dart';
+import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
 import 'coord_fixer.dart';
 import 'package:intl/intl.dart';
 import 'package:cross_file/cross_file.dart';
 
 class KeepService {
-  static const String _baseUrl = kIsWeb
+  static final String _baseUrl = shouldUseWebProxy()
       ? '/proxy/keep'
       : 'https://api.gotokeep.com';
-  static const String _loginUrl = '$_baseUrl/v1.1/users/login';
-  static const String _activityIdsUrl =
+  static final String _loginUrl = '$_baseUrl/v1.1/users/login';
+  static final String _activityIdsUrl =
       '$_baseUrl/pd/v3/stats/detail?dateUnit=all';
-  static const String _activityDataUrl = '$_baseUrl/pd/v3/';
+  static final String _activityDataUrl = '$_baseUrl/pd/v3/';
   static const double _alpha = 0.3;
 
   String? _token;

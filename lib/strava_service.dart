@@ -5,25 +5,43 @@ import 'package:cross_file/cross_file.dart';
 import 'package:archive/archive.dart';
 import 'app_storage.dart';
 import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
+import 'strava_webview_bridge_native.dart'
+    if (dart.library.js_interop) 'strava_webview_bridge_web.dart';
 
-class StravaService {
+enum StravaUploadMode { api, webView }
+
+class StravaService extends ChangeNotifier {
   static const String _authUrl = 'https://www.strava.com/oauth/authorize';
   static const String _tokenUrl = 'https://www.strava.com/oauth/token';
   static const String _uploadUrl = 'https://www.strava.com/api/v3/uploads';
   static const String _redirectUri = 'stravaauto://localhost';
+  static const String _uploadModeKey = 'strava_upload_mode';
+
+  StravaService({StravaWebViewBridge? webViewBridge})
+    : _webViewBridge = webViewBridge;
+
   final _storage = AppStorage();
+  final StravaWebViewBridge? _webViewBridge;
   String? clientId;
   String? clientSecret;
+  StravaUploadMode _uploadMode = StravaUploadMode.api;
 
   String? accessToken;
   String? refreshToken;
   int? expiresAt;
+
+  StravaUploadMode get uploadMode => _uploadMode;
+  bool get isWebViewUploadSupported => !shouldUseWebProxy();
 
   Future<void> init() async {
     await _storage.init();
 
     clientId = await _storage.read(key: 'client_id');
     clientSecret = await _storage.read(key: 'client_secret');
+    final storedUploadMode = await _storage.read(key: _uploadModeKey);
+    _uploadMode = storedUploadMode == StravaUploadMode.webView.name
+        ? StravaUploadMode.webView
+        : StravaUploadMode.api;
 
     accessToken = await _storage.read(key: 'access_token');
     refreshToken = await _storage.read(key: 'refresh_token');
@@ -38,20 +56,42 @@ class StravaService {
 
   bool get hasCredentials => clientId != null && clientSecret != null;
 
+  bool get isReadyForUpload {
+    if (_uploadMode == StravaUploadMode.webView) {
+      return _webViewBridge?.isLoggedIn == true;
+    }
+    return isAuthenticated;
+  }
+
+  Future<void> setUploadMode(StravaUploadMode uploadMode) async {
+    if (uploadMode == StravaUploadMode.webView && !isWebViewUploadSupported) {
+      throw Exception('WebView upload is not available in this environment');
+    }
+    if (_uploadMode == uploadMode) return;
+    _uploadMode = uploadMode;
+    await _storage.write(key: _uploadModeKey, value: uploadMode.name);
+    notifyListeners();
+  }
+
   Uri getAuthorizationUrl() {
     if (!hasCredentials) {
       throw Exception('Client ID/Secret not configured in secrets.dart');
     }
-    if (kIsWeb) {
-      final String currentUri = getRedirectURI();
-      return Uri.parse(
-        '$_authUrl?client_id=$clientId&response_type=code&redirect_uri=$currentUri&approval_prompt=force&scope=activity:write',
-      );
-    } else {
-      return Uri.parse(
-        '$_authUrl?client_id=$clientId&response_type=code&redirect_uri=$_redirectUri&approval_prompt=force&scope=activity:write',
-      );
-    }
+    return Uri.parse(_authUrl).replace(
+      queryParameters: {
+        'client_id': clientId,
+        'response_type': 'code',
+        'redirect_uri': _authorizationRedirectUri,
+        'approval_prompt': 'force',
+        'scope': 'activity:write',
+      },
+    );
+  }
+
+  String get _authorizationRedirectUri {
+    if (!kIsWeb) return _redirectUri;
+    if (isChromeExtension()) return 'web%2B$_redirectUri';
+    return getRedirectURI();
   }
 
   Future<bool> handleAuthCallback(Uri uri) async {
@@ -114,6 +154,7 @@ class StravaService {
     await _storage.write(key: 'access_token', value: accessToken!);
     await _storage.write(key: 'refresh_token', value: refreshToken!);
     await _storage.write(key: 'expires_at', value: expiresAt!.toString());
+    notifyListeners();
   }
 
   Future<bool> saveCredentials(String clientId, String clientSecret) async {
@@ -144,9 +185,18 @@ class StravaService {
     accessToken = null;
     refreshToken = null;
     expiresAt = null;
+    notifyListeners();
   }
 
   Future<String> uploadStravaFile(XFile file, String sportType) async {
+    if (_uploadMode == StravaUploadMode.webView) {
+      final bridge = _webViewBridge;
+      if (bridge == null) {
+        throw Exception('Strava WebView bridge is not available');
+      }
+      return bridge.uploadStravaFile(file);
+    }
+
     if (!isAuthenticated) throw Exception('Not authenticated');
 
     final refreshThreshold =
