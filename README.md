@@ -61,11 +61,11 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 
 ### Web 本地扩展程序
 
-适用于 Chrome 以及其他基于 Chromium 内核的浏览器。
+适用于 Chrome 以及其他基于 Chromium 内核的桌面端浏览器。
 
 1. 下载 [`web_extension.zip`](../../releases/latest/download/web_extension.zip) 并解压。
-2. 打开浏览器的扩展程序管理页面。
-3. 点击 **加载已解压的扩展程序**，选择解压后的文件夹并加载。
+2. 打开浏览器的 [扩展程序管理页](chrome://extensions/)。
+3. 点击 **加载未打包的扩展程序**，选择解压后的文件夹并加载。
 4. 点击浏览器工具栏中的扩展图标即可使用。
 
 ### Windows

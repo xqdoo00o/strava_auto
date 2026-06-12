@@ -90,7 +90,7 @@ class StravaService extends ChangeNotifier {
 
   String get _authorizationRedirectUri {
     if (!kIsWeb) return _redirectUri;
-    if (isChromeExtension()) return 'web%2B$_redirectUri';
+    if (isChromeExtension()) return 'web+$_redirectUri';
     return getRedirectURI();
   }
 
