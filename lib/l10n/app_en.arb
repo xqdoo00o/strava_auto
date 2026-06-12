@@ -121,7 +121,7 @@
   "webViewLoginRequired": "Please sign in in the Strava WebView first.",
   "stravaWebViewTitle": "Strava WebView",
   "stravaWebViewLoginHint": "Sign in to Strava here, then swipe right to return.",
-  "stravaWebViewUnsupported": "WebView upload is not available on Web. Use the Strava API upload method instead.",
+  "stravaWebViewUnsupported": "WebView sync is not available on Web. Use the Strava API instead.",
   "readyToSync": "Ready to sync activities",
   "connectToStart": "Connect to Strava to start",
   "connectShort": "Connect",

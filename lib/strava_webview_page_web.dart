@@ -69,7 +69,10 @@ class _StravaWebViewPageState extends State<StravaWebViewPage>
     super.build(context);
     final view = HtmlElementView(viewType: _viewType);
     return Scaffold(
-      appBar: StravaWebViewAppBar(onReturnHome: widget.onReturnHome),
+      appBar: StravaWebViewAppBar(
+        onReturnHome: widget.onReturnHome,
+        enableSwipeReturn: true,
+      ),
       body: widget.interactive ? view : IgnorePointer(child: view),
     );
   }

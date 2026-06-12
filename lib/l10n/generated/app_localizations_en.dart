@@ -316,7 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stravaWebViewUnsupported =>
-      'WebView upload is not available on Web. Use the Strava API upload method instead.';
+      'WebView sync is not available on Web. Use the Strava API instead.';
 
   @override
   String get readyToSync => 'Ready to sync activities';

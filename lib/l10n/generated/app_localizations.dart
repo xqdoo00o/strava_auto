@@ -665,7 +665,7 @@ abstract class AppLocalizations {
   /// No description provided for @stravaWebViewUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'WebView upload is not available on Web. Use the Strava API upload method instead.'**
+  /// **'WebView sync is not available on Web. Use the Strava API instead.'**
   String get stravaWebViewUnsupported;
 
   /// No description provided for @readyToSync.

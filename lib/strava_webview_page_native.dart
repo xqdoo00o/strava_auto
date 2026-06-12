@@ -1,6 +1,5 @@
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get_it/get_it.dart';
@@ -70,10 +69,6 @@ class _StravaWebViewPageState extends State<StravaWebViewPage> {
   final StravaWebViewBridge _bridge = GetIt.I<StravaWebViewBridge>();
   InAppWebViewController? _controller;
 
-  bool get _showAppBar =>
-      defaultTargetPlatform == TargetPlatform.iOS ||
-      defaultTargetPlatform == TargetPlatform.android;
-
   void _handleDomContentLoadedUrl(List<dynamic> arguments) {
     if (arguments.isEmpty) return;
 
@@ -119,12 +114,10 @@ class _StravaWebViewPageState extends State<StravaWebViewPage> {
     );
 
     return Scaffold(
-      appBar: _showAppBar
-          ? StravaWebViewAppBar(
-              onReturnHome: widget.onReturnHome,
-              enableSwipeReturn: true,
-            )
-          : null,
+      appBar: StravaWebViewAppBar(
+        onReturnHome: widget.onReturnHome,
+        enableSwipeReturn: true,
+      ),
       body: widget.interactive ? webView : IgnorePointer(child: webView),
     );
   }

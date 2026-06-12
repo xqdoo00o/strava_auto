@@ -313,7 +313,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get stravaWebViewUnsupported =>
-      'Web端 暂不支持 WebView 上传，请改用 Strava API 上传方式。';
+      'Web端暂不支持 WebView 同步，请使用 Strava API 同步。';
 
   @override
   String get readyToSync => '准备同步活动';

@@ -18,6 +18,7 @@ import 'strava_webview_bridge_native.dart'
 import 'strava_auth_iframe_dialog_stub.dart'
     if (dart.library.js_interop) 'strava_auth_iframe_dialog_web.dart';
 import 'strava_webview_shell.dart';
+import 'swipe_hint_animation.dart';
 import 'log_manager.dart';
 import 'settings_page.dart';
 import 'theme_manager.dart';
@@ -247,7 +248,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final StravaService _stravaService = GetIt.I<StravaService>();
   final StravaWebViewBridge _stravaWebViewBridge =
       GetIt.I<StravaWebViewBridge>();
@@ -265,6 +266,7 @@ class _DashboardPageState extends State<DashboardPage>
   bool _keepLoaded = false;
   bool _garminLoaded = false;
   double _statusCardDragDx = 0;
+  bool _hasPlayedStatusCardSwipeHint = false;
   final bool _isMobilePlatform =
       defaultTargetPlatform == TargetPlatform.iOS ||
       defaultTargetPlatform == TargetPlatform.android;
@@ -277,6 +279,13 @@ class _DashboardPageState extends State<DashboardPage>
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _statusCardSwipeHintController;
+  late Animation<double> _statusCardSwipeHintAnimation;
+
+  double get _statusCardVisualDx {
+    final dragOffset = _statusCardDragDx.clamp(-8.0, 28.0);
+    return dragOffset + _statusCardSwipeHintAnimation.value;
+  }
 
   @override
   void initState() {
@@ -288,6 +297,14 @@ class _DashboardPageState extends State<DashboardPage>
 
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _statusCardSwipeHintController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _statusCardSwipeHintAnimation = buildSwipeHintAnimation(
+      _statusCardSwipeHintController,
+      direction: 1,
     );
     _appState.addListener(_handleStateChange);
     _stravaService.addListener(_handleStravaServiceChange);
@@ -303,6 +320,7 @@ class _DashboardPageState extends State<DashboardPage>
     _sub?.cancel();
     _intentSub?.cancel();
     _pulseController.dispose();
+    _statusCardSwipeHintController.dispose();
     _appState.removeListener(_handleStateChange);
     _stravaService.removeListener(_handleStravaServiceChange);
     _stravaWebViewBridge.removeListener(_handleStravaServiceChange);
@@ -320,6 +338,9 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _handleStravaServiceChange() {
     _applyServiceConnectionState();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _applyServiceConnectionState() {
@@ -636,7 +657,9 @@ class _DashboardPageState extends State<DashboardPage>
           );
           return;
         }
-        final validFiles = validPlatformFiles.map((file) => file.xFile).toList();
+        final validFiles = validPlatformFiles
+            .map((file) => file.xFile)
+            .toList();
         _showUploadDialog(validFiles);
       }
     } catch (e) {
@@ -889,6 +912,10 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildStatusCard(ThemeData theme) {
+    if (_isWebViewUploadMode) {
+      _maybePlayStatusCardSwipeHint();
+    }
+
     final card = Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -987,33 +1014,74 @@ class _DashboardPageState extends State<DashboardPage>
       ),
     );
 
-    if (!_canSwipeStatusCardToWebView) {
+    if (!_isWebViewUploadMode) {
       return card;
     }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onHorizontalDragStart: (_) {
-        _statusCardDragDx = 0;
-      },
-      onHorizontalDragUpdate: (details) {
-        _statusCardDragDx += details.primaryDelta ?? 0;
-      },
-      onHorizontalDragEnd: (details) {
-        final velocity = details.primaryVelocity ?? 0;
-        final shouldOpenWebView = velocity > 250 || _statusCardDragDx > 36;
-        _statusCardDragDx = 0;
-        if (shouldOpenWebView) {
-          StravaWebViewShell.showWebView(context);
-        }
-      },
+    final animatedCard = AnimatedBuilder(
+      animation: _statusCardSwipeHintAnimation,
       child: card,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_statusCardVisualDx, 0),
+          child: child,
+        );
+      },
+    );
+
+    if (!_canSwipeStatusCardToWebView) {
+      return _buildStatusCardHoverCursor(animatedCard);
+    }
+
+    return _buildStatusCardHoverCursor(
+      GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: (_) {
+          _statusCardSwipeHintController.stop();
+          _statusCardSwipeHintController.reset();
+          setState(() {
+            _statusCardDragDx = 0;
+          });
+        },
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            _statusCardDragDx += details.primaryDelta ?? 0;
+          });
+        },
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          final shouldOpenWebView = velocity > 250 || _statusCardDragDx > 36;
+          setState(() {
+            _statusCardDragDx = 0;
+          });
+          if (shouldOpenWebView) {
+            StravaWebViewShell.showWebView(context);
+          }
+        },
+        child: animatedCard,
+      ),
     );
   }
 
+  Widget _buildStatusCardHoverCursor(Widget child) {
+    return MouseRegion(cursor: SystemMouseCursors.resizeLeft, child: child);
+  }
+
+  void _maybePlayStatusCardSwipeHint() {
+    if (_hasPlayedStatusCardSwipeHint) return;
+    _hasPlayedStatusCardSwipeHint = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isWebViewUploadMode) return;
+      _statusCardSwipeHintController.forward(from: 0);
+    });
+  }
+
+  bool get _isWebViewUploadMode {
+    return _stravaService.uploadMode == StravaUploadMode.webView;
+  }
+
   bool get _canSwipeStatusCardToWebView {
-    return _isMobilePlatform &&
-        _stravaService.uploadMode == StravaUploadMode.webView;
+    return _isMobilePlatform && _isWebViewUploadMode;
   }
 
   Widget _buildMainActionArea(ThemeData theme) {
