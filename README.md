@@ -8,7 +8,8 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 
 - **运动文件上传**：支持选择或分享 `.fit`，`.tcx`，`.gpx` 文件并上传到 Strava。
 - **运动类型设置**：上传时可选择默认类型跑步或骑行。
-- **Strava 授权登录**：通过 Strava API 授权连接账号，无需手动填写 Token。
+- **Strava API 同步**：通过 Strava API 连接账号并同步，适合已订阅 Strava 的账号。
+- **Strava WebView 同步**：通过内置 WebView 登录 Strava 并同步，适合未订阅 Strava 的账号。
 - **坐标纠偏**：可将 GCJ-02 坐标转换为 Strava 常用的 WGS84 坐标。
 - **运动平台同步**：登录对应运动平台账号后，可按日期筛选活动并同步到 Strava。
 - **顽鹿/iGPSPORT**：支持同步骑行活动。
@@ -17,9 +18,9 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 - **多平台支持**：适配 Android、iOS、Web、Windows、macOS、Linux。
 - **多语言与主题**：支持简体中文、英文，以及系统深色模式。
 
-## 准备工作
+## 已订阅 Strava 账号准备工作
 
-使用前需要创建一个 Strava API 应用：
+使用 Strava API 同步前，需要先创建一个 Strava API 应用：
 
 1. 打开 [Strava API](https://www.strava.com/settings/api)。
 2. 创建 API 应用。
@@ -57,6 +58,15 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 2. 打开 [Cloudflare Pages](https://pages.cloudflare.com/)。
 3. 选择拖放文件，将 `web.zip` 上传并创建Pages部署。
 4. 前往 [Strava API 设置页](https://www.strava.com/settings/api)，将 **授权回调域** 设置为 `pages.dev` 域名或你绑定的自定义域名。
+
+### Web 本地扩展程序
+
+适用于 Chrome 以及其他基于 Chromium 内核的浏览器。
+
+1. 下载 [`web_extension.zip`](../../releases/latest/download/web_extension.zip) 并解压。
+2. 打开浏览器的扩展程序管理页面。
+3. 点击 **加载已解压的扩展程序**，选择解压后的文件夹并加载。
+4. 点击浏览器工具栏中的扩展图标即可使用。
 
 ### Windows
 
