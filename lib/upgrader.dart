@@ -8,7 +8,7 @@ import 'log_manager.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class AppUpgrader {
-  static const String currentVersion = "0.9.9";
+  static const String currentVersion = "1.0.0";
   static const String repoUrl =
       "https://api.github.com/repos/xqdoo00o/strava_auto/releases/latest";
   static bool isMobilePlatform =

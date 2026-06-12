@@ -5,10 +5,10 @@
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#FC4C02",
-    "description": "A new Flutter project.",
+    "description": "Sync your sports activities to Strava.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
-    "version": "0.9.9",
+    "version": "1.0.0",
     "manifest_version": 3,
     "action": {
         "default_icon": "icons/Icon-192.png"
