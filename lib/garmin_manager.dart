@@ -42,6 +42,9 @@ class GarminManager extends ChangeNotifier {
 
   Future<void> init() async {
     await _storage.init();
+    final prefs = await SharedPreferences.getInstance();
+    final storedSportType = prefs.getString('garmin_sport_type');
+    _sportType = storedSportType == ride ? ride : run;
     await _initDate();
     _username = await _storage.read(key: 'garmin_username');
     final tokens = await _storage.read(key: 'garmin_tokens');
@@ -52,14 +55,12 @@ class GarminManager extends ChangeNotifier {
       _refreshToken = _tokens['garmin_refresh_token'];
       _refreshTokenExp = _tokens['garmin_refresh_token_exp'];
     }
-    final storedSportType = await _storage.read(key: 'garmin_sport_type');
-    _sportType = storedSportType == ride ? ride : run;
     notifyListeners();
   }
 
   Future<void> _initDate() async {
     final prefs = await SharedPreferences.getInstance();
-    final lastSyncTime = prefs.getInt('garmin_last_sync_time');
+    final lastSyncTime = prefs.getInt('garmin_last_${_sportType}_sync_time');
 
     if (lastSyncTime != null && lastSyncTime > 0) {
       _lastSyncDate = DateTime.fromMillisecondsSinceEpoch(lastSyncTime * 1000);
@@ -76,7 +77,7 @@ class GarminManager extends ChangeNotifier {
   Future<void> _saveLastSyncDate(DateTime lastSyncDate) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(
-      'garmin_last_sync_time',
+      'garmin_last_${_sportType}_sync_time',
       lastSyncDate.millisecondsSinceEpoch ~/ 1000,
     );
     _lastSyncDate = lastSyncDate;
@@ -87,7 +88,9 @@ class GarminManager extends ChangeNotifier {
     if (sportType != run && sportType != ride) return;
     _sportType = sportType;
     notifyListeners();
-    await _storage.write(key: 'garmin_sport_type', value: sportType);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('garmin_sport_type', sportType);
+    await _initDate();
   }
 
   void writeToken(String token) {
