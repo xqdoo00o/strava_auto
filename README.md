@@ -64,13 +64,15 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 适用于 Chrome 以及其他基于 Chromium 内核的桌面端浏览器。
 
 1. 下载 [`web_extension.zip`](../../releases/latest/download/web_extension.zip) 并解压。
-2. 打开浏览器的 [扩展程序管理页](chrome://extensions/)。
+2. 打开浏览器扩展程序管理页 `chrome://extensions/`，右上角打开 **开发者模式**。
 3. 点击 **加载未打包的扩展程序**，选择解压后的文件夹并加载。
 4. 点击浏览器工具栏中的扩展图标即可使用。
 
 ### Windows
 
 下载 [`Release.zip`](../../releases/latest/download/Release.zip)，解压后双击 `.exe` 文件运行。
+
+如需使用 **Strava WebView** 同步，请先安装 [Edge WebView2](https://developer.microsoft.com/microsoft-edge/webview2/#download)（Windows 11 已内置，无需重复安装）
 
 ### macOS
 
@@ -84,13 +86,13 @@ Strava Auto 是一个基于 Flutter 开发的跨平台运动数据同步工具�
 ## 数据与隐私
 
 - 本应用不会向作者服务器上传、收集或存储用户数据。
-- Strava、顽鹿、iGPSPORT、Keep 等账号凭证仅保存在设备本地。
+- Strava、顽鹿、iGPSPORT、Garmin、Keep 等账号凭证仅保存在设备本地。
 - 活动数据只会在你主动点击上传或同步时发送到 Strava。
 - 请妥善保管自己的 API 配置和账号信息。
 
 ## 免责声明
 
-本项目为个人开源项目，与 Strava、OneLap、iGPSPORT、Keep、Garmin 官方均无任何关联。
+本项目为个人开源项目，与 Strava、顽鹿、iGPSPORT、Garmin、Keep 官方均无任何关联。
 
 使用本应用产生的一切后果由用户自行承担，作者不承担任何直接或间接责任。
 
