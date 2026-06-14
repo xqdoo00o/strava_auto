@@ -94,6 +94,7 @@ class _StravaWebViewPageState extends State<StravaWebViewPage> {
   @override
   Widget build(BuildContext context) {
     final webView = InAppWebView(
+      webViewEnvironment: _bridge.webViewEnvironment,
       initialUrlRequest: URLRequest(url: StravaWebViewBridge.loginUrl),
       initialUserScripts: UnmodifiableListView<UserScript>([
         _domContentLoadedUrlScript,

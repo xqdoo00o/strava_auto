@@ -46,6 +46,7 @@ final getIt = GetIt.instance;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final stravaWebViewBridge = StravaWebViewBridge();
+  await stravaWebViewBridge.initWebViewEnvironment();
   final stravaService = StravaService(webViewBridge: stravaWebViewBridge);
   await stravaService.init();
   getIt.registerSingleton<AppState>(AppState());

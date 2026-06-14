@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:convert';
-
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class StravaWebViewBridge extends ChangeNotifier {
   static final WebUri loginUrl = WebUri(
@@ -60,10 +62,12 @@ class StravaWebViewBridge extends ChangeNotifier {
   ''';
 
   InAppWebViewController? _controller;
+  WebViewEnvironment? _webViewEnvironment;
   WebUri? _currentUrl;
   String _csrfToken = '';
   bool _isLoggedIn = false;
 
+  WebViewEnvironment? get webViewEnvironment => _webViewEnvironment;
   WebUri? get currentUrl => _currentUrl;
   String get csrfToken => _csrfToken;
   bool get isLoggedIn => _isLoggedIn;
@@ -87,6 +91,17 @@ class StravaWebViewBridge extends ChangeNotifier {
       csrfToken: csrfToken,
       isLoggedIn: csrfToken.isNotEmpty,
     );
+  }
+
+  Future<void> initWebViewEnvironment() async {
+    if (Platform.isWindows) {
+      final docDir = await getApplicationSupportDirectory();
+      final webviewDataPath = p.join(docDir.path, 'WebviewData');
+
+      _webViewEnvironment ??= await WebViewEnvironment.create(
+        settings: WebViewEnvironmentSettings(userDataFolder: webviewDataPath),
+      );
+    }
   }
 
   Future<void> logout() async {

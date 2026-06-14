@@ -40,6 +40,8 @@ class StravaWebViewBridge extends ChangeNotifier {
     _setSession(isReady: false, url: null, csrfToken: '', isLoggedIn: false);
   }
 
+  Future<void> initWebViewEnvironment() async {}
+
   void handleDomContentLoaded(String? url, {required String csrfToken}) {
     final parsedUrl = url == null || url.isEmpty ? null : Uri.tryParse(url);
     _setSession(
