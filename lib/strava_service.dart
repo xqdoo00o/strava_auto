@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:archive/archive.dart';
 import 'app_storage.dart';
-import "stub_logic.dart" if (dart.library.js_interop) "web_logic.dart";
+import "stub_logic.dart"
+    if (dart.library.js_interop) "web_logic.dart"
+    if (dart.library.io) "native_logic.dart";
 import 'strava_webview_bridge_native.dart'
     if (dart.library.js_interop) 'strava_webview_bridge_web.dart';
 
@@ -31,7 +33,8 @@ class StravaService extends ChangeNotifier {
   int? expiresAt;
 
   StravaUploadMode get uploadMode => _uploadMode;
-  bool get isWebViewUploadSupported => !shouldUseWebProxy();
+  bool get isWebViewModeSupported => !shouldUseWebProxy();
+  bool get isWebViewEnvInstalled => isWebViewRuntimeAvailable();
 
   Future<void> init() async {
     await _storage.init();
@@ -64,8 +67,13 @@ class StravaService extends ChangeNotifier {
   }
 
   Future<void> setUploadMode(StravaUploadMode uploadMode) async {
-    if (uploadMode == StravaUploadMode.webView && !isWebViewUploadSupported) {
-      throw Exception('WebView upload is not available in this environment');
+    if (uploadMode == StravaUploadMode.webView) {
+      if (!isWebViewModeSupported) {
+        throw Exception('WebView mode is not supported in this environment');
+      }
+      if (!isWebViewEnvInstalled) {
+        throw Exception('Required WebView runtime is not available');
+      }
     }
     if (_uploadMode == uploadMode) return;
     _uploadMode = uploadMode;

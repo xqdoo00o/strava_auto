@@ -15,6 +15,7 @@ import 'keep_manager.dart';
 import 'app_state.dart';
 import 'extension.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'package:get_it/get_it.dart';
 import 'upgrader.dart';
@@ -624,11 +625,22 @@ class _LanguageDialog extends StatelessWidget {
 class _StravaUploadModeDialog extends StatelessWidget {
   const _StravaUploadModeDialog();
 
+  static final webViewRuntimeName =
+      defaultTargetPlatform == TargetPlatform.windows
+      ? 'Edge WebView2'
+      : 'webkit2gtk-4.1';
+  static final Uri _webViewDownloadUri = Uri.parse(
+    defaultTargetPlatform == TargetPlatform.windows
+        ? 'https://developer.microsoft.com/microsoft-edge/webview2#download'
+        : 'https://webkitgtk.org/reference/webkit2gtk/stable/',
+  );
+
   @override
   Widget build(BuildContext context) {
     final stravaService = GetIt.I<StravaService>();
     final l10n = AppLocalizations.of(context)!;
-    final isWebViewSupported = stravaService.isWebViewUploadSupported;
+    final isWebViewSupported = stravaService.isWebViewModeSupported;
+    final isWebViewEnvInstalled = stravaService.isWebViewEnvInstalled;
 
     return AlertDialog(
       title: Text(l10n.stravaUploadMethodTitle),
@@ -636,9 +648,15 @@ class _StravaUploadModeDialog extends StatelessWidget {
         groupValue: stravaService.uploadMode,
         onChanged: (value) async {
           if (value == null) return;
-          if (value == StravaUploadMode.webView && !isWebViewSupported) {
-            context.showToast(l10n.stravaWebViewUnsupported);
-            return;
+          if (value == StravaUploadMode.webView) {
+            if (!isWebViewSupported) {
+              context.showToast(l10n.stravaWebViewUnsupported);
+              return;
+            }
+            if (!isWebViewEnvInstalled) {
+              await _showWebViewRuntimeDialog(context);
+              return;
+            }
           }
           try {
             await stravaService.setUploadMode(value);
@@ -679,6 +697,44 @@ class _StravaUploadModeDialog extends StatelessWidget {
           child: Text(l10n.cancelButton),
         ),
       ],
+    );
+  }
+
+  Future<void> _showWebViewRuntimeDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.webViewEnvTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.webViewEnvMsg(webViewRuntimeName)),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => launchUrl(
+                _webViewDownloadUri,
+                mode: LaunchMode.externalApplication,
+              ),
+              child: Text(
+                l10n.webViewEnvLink(webViewRuntimeName),
+                style: TextStyle(
+                  color: Theme.of(dialogContext).colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.confirmButton),
+          ),
+        ],
+      ),
     );
   }
 }

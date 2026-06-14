@@ -11,4 +11,8 @@ bool shouldUseWebProxy() {
   return false;
 }
 
+bool isWebViewRuntimeAvailable() {
+  return true;
+}
+
 Future<void> registerDesktopCustomProtocol() async {}

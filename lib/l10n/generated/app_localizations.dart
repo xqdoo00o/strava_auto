@@ -668,6 +668,24 @@ abstract class AppLocalizations {
   /// **'WebView sync is not available on Web. Use the Strava API instead.'**
   String get stravaWebViewUnsupported;
 
+  /// No description provided for @webViewEnvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WebView Runtime Required'**
+  String get webViewEnvTitle;
+
+  /// No description provided for @webViewEnvMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'The {aWebViewRuntime} Runtime was not detected on current system, Built-in WebView login page cannot be opened.\nOpen the link below to download and install it, then restart the app.'**
+  String webViewEnvMsg(Object aWebViewRuntime);
+
+  /// No description provided for @webViewEnvLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {aWebViewRuntime} Runtime'**
+  String webViewEnvLink(Object aWebViewRuntime);
+
   /// No description provided for @readyToSync.
   ///
   /// In en, this message translates to:

@@ -319,6 +319,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'WebView sync is not available on Web. Use the Strava API instead.';
 
   @override
+  String get webViewEnvTitle => 'WebView Runtime Required';
+
+  @override
+  String webViewEnvMsg(Object aWebViewRuntime) {
+    return 'The $aWebViewRuntime Runtime was not detected on current system, Built-in WebView login page cannot be opened.\nOpen the link below to download and install it, then restart the app.';
+  }
+
+  @override
+  String webViewEnvLink(Object aWebViewRuntime) {
+    return 'Download $aWebViewRuntime Runtime';
+  }
+
+  @override
   String get readyToSync => 'Ready to sync activities';
 
   @override

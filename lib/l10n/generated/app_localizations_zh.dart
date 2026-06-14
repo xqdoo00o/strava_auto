@@ -316,6 +316,19 @@ class AppLocalizationsZh extends AppLocalizations {
       'Web端暂不支持 WebView 同步，请使用 Strava API 同步。';
 
   @override
+  String get webViewEnvTitle => '缺少 WebView 组件';
+
+  @override
+  String webViewEnvMsg(Object aWebViewRuntime) {
+    return '当前系统未检测到 $aWebViewRuntime 组件，无法打开内置 Webview 登录页。\n请打开链接下载安装，完成后重新打开应用。';
+  }
+
+  @override
+  String webViewEnvLink(Object aWebViewRuntime) {
+    return '下载 $aWebViewRuntime 组件';
+  }
+
+  @override
   String get readyToSync => '准备同步活动';
 
   @override

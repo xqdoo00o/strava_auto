@@ -26,4 +26,8 @@ bool shouldUseWebProxy() {
   return !isChromeExtension();
 }
 
+bool isWebViewRuntimeAvailable() {
+  return true;
+}
+
 Future<void> registerDesktopCustomProtocol() async {}
