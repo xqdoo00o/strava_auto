@@ -30,6 +30,10 @@ class GarminManager extends ChangeNotifier {
 
   String? _username;
   String? get username => _username;
+  bool get mfaRequired => _service.mfaRequired;
+  String? get mfaMethod => _service.mfaMethod;
+  String? _lastLoginError;
+  String? get lastLoginError => _lastLoginError;
 
   String _sportType = run;
   String get sportType => _sportType;
@@ -117,29 +121,68 @@ class GarminManager extends ChangeNotifier {
   }
 
   Future<bool> login(String username, String password) async {
-    try {
-      final result = await _service.login(username, password);
-      if (result['success'] == true) {
-        // Save credentials securely
-        await _storage.write(key: 'garmin_username', value: username);
-        await _storage.write(key: 'garmin_password', value: password);
-        _username = username;
-        writeToken(result['token']);
-        writeRefreshToken(
-          result['refreshToken'],
-          result['refreshExpire'],
-          result['clientId'],
-        );
-        await saveToken();
+    return _loginWithResult(username, password, () {
+      return _service.login(username, password);
+    });
+  }
 
-        notifyListeners();
+  Future<bool> loginWithMfa(
+    String username,
+    String password,
+    String mfaCode,
+  ) async {
+    return _loginWithResult(username, password, () {
+      return _service.completeMfaLogin(mfaCode);
+    });
+  }
+
+  Future<bool> _loginWithResult(
+    String username,
+    String password,
+    Future<Map<String, dynamic>> Function() loginAction,
+  ) async {
+    try {
+      final result = await loginAction();
+      if (result['success'] == true) {
+        _lastLoginError = null;
+        await _saveLogin(username, password, result);
         return true;
+      }
+      if (result['mfaRequired'] == true) {
+        _lastLoginError = null;
+        notifyListeners();
+      } else {
+        _lastLoginError = result['message']?.toString();
+        LogManager().addLog(
+          "Garmin Login Failed: ${_lastLoginError ?? 'Unknown error'}",
+          isError: true,
+        );
       }
       return false;
     } catch (e) {
+      _lastLoginError = e.toString();
       LogManager().addLog("Garmin Login Error: $e", isError: true);
       return false;
     }
+  }
+
+  Future<void> _saveLogin(
+    String username,
+    String password,
+    Map<String, dynamic> result,
+  ) async {
+    await _storage.write(key: 'garmin_username', value: username);
+    await _storage.write(key: 'garmin_password', value: password);
+    _username = username;
+    writeToken(result['token']);
+    writeRefreshToken(
+      result['refreshToken'],
+      result['refreshExpire'],
+      result['clientId'],
+    );
+    await saveToken();
+
+    notifyListeners();
   }
 
   Future<bool> loginWithServiceTicket(

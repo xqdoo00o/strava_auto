@@ -1,5 +1,3 @@
-import 'dart:js_interop';
-
 import 'package:web/web.dart' as web;
 
 void clearURLParameter() {
@@ -11,15 +9,8 @@ String getRedirectURI() {
   return web.window.location.origin + web.window.location.pathname;
 }
 
-@JS('chrome.runtime.id')
-external JSString? get chromeRuntimeId;
-
 bool isChromeExtension() {
-  try {
-    return chromeRuntimeId != null;
-  } catch (_) {
-    return false;
-  }
+  return web.window.location.protocol == 'chrome-extension:';
 }
 
 bool shouldUseWebProxy() {

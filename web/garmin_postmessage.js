@@ -51,12 +51,12 @@ var XD = function(){
 
                 // the browser supports window.postMessage, so call it with a targetOrigin
                 // set appropriately, based on the target_url parameter.
-                // var newURL      = target_url.replace( /([^:]+:\/\/[^\/]+).*/, '$1');
+                var newURL      = '*';
                 var jsonMessage = JSON.stringify(message);
 
-                console.info('postmessage.js: newURL: [' + '*' + '], jsonMessage: [' + jsonMessage + ']');
+                console.info('postmessage.js: newURL: [' + newURL + '], jsonMessage: [' + jsonMessage + ']');
 
-                target['postMessage'](jsonMessage, '*');
+                target['postMessage'](jsonMessage, newURL);
             } else if (target_url) {
                 // the browser does not support window.postMessage, so set the location
                 // of the target to target_url#message. A bit ugly, but it works! A cache

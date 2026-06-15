@@ -191,6 +191,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passwordLabel => '密码';
 
   @override
+  String get mfaCodeLabel => 'MFA 验证码';
+
+  @override
   String get connectSyncButton => '连接';
 
   @override
@@ -206,6 +209,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get loginFailed => '登录失败，请检查账号密码。';
+
+  @override
+  String get sms => '短信';
+
+  @override
+  String get email => '邮箱';
+
+  @override
+  String mfaRequiredMessage(Object aMFAPlatform) {
+    return '请输入$aMFAPlatform验证码后继续连接';
+  }
 
   @override
   String get diagnosticsSection => '诊断';

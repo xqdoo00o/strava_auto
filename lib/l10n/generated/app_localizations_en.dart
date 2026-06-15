@@ -192,6 +192,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordLabel => 'Password';
 
   @override
+  String get mfaCodeLabel => 'MFA Code';
+
+  @override
   String get connectSyncButton => 'Connect';
 
   @override
@@ -207,6 +210,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginFailed => 'Login failed. Please check your credentials.';
+
+  @override
+  String get sms => 'SMS';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String mfaRequiredMessage(Object aMFAPlatform) {
+    return 'Enter the $aMFAPlatform code and continue connect';
+  }
 
   @override
   String get diagnosticsSection => 'DIAGNOSTICS';

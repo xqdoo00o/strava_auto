@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get passwordLabel;
 
+  /// No description provided for @mfaCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'MFA Code'**
+  String get mfaCodeLabel;
+
   /// No description provided for @connectSyncButton.
   ///
   /// In en, this message translates to:
@@ -469,6 +475,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Login failed. Please check your credentials.'**
   String get loginFailed;
+
+  /// No description provided for @sms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get sms;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @mfaRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the {aMFAPlatform} code and continue connect'**
+  String mfaRequiredMessage(Object aMFAPlatform);
 
   /// No description provided for @diagnosticsSection.
   ///

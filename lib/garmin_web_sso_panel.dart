@@ -57,7 +57,7 @@ class _GarminWebSsoPanelState extends State<GarminWebSsoPanel> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 360),
             child: Container(
-              height: 220,
+              height: 280,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
               child: const HtmlElementView(viewType: _viewType),
@@ -101,14 +101,17 @@ class _GarminWebSsoPanelState extends State<GarminWebSsoPanel> {
 
   String _buildSignInUrl() {
     final origin = web.window.location.origin;
-    return Uri.parse('$_ssoBase/signin')
+    final isChromeExtension = origin.startsWith('chrome-extension://');
+    return Uri.parse(
+          isChromeExtension ? '$_ssoBase/signin' : '$origin/sso/signin',
+        )
         .replace(
           queryParameters: {
             'id': 'gauth-widget',
             'embedWidget': 'true',
             'gauthHost': _ssoBase,
             'service': _ssoEmbed,
-            'source': origin,
+            'source': _ssoOrigin,
             'consumeServiceTicket': 'false',
           },
         )
@@ -116,7 +119,7 @@ class _GarminWebSsoPanelState extends State<GarminWebSsoPanel> {
   }
 
   Future<void> _handleMessage(web.MessageEvent message) async {
-    if (message.origin != _ssoOrigin || _isConnecting) return;
+    if (_isConnecting) return;
 
     final payload = _decodeMessagePayload(message.data.dartify());
     if (payload == null) return;

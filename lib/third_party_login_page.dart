@@ -21,6 +21,10 @@ class ThirdPartyLoginPage extends StatefulWidget {
     required this.lastSyncDate,
     required this.init,
     required this.login,
+    this.loginWithMfa,
+    this.mfaRequired,
+    this.mfaMethod,
+    this.loginError,
     required this.logout,
     required this.setLastSyncDate,
     required this.syncNow,
@@ -36,6 +40,11 @@ class ThirdPartyLoginPage extends StatefulWidget {
   final DateTime? Function() lastSyncDate;
   final Future<void> Function() init;
   final Future<bool> Function(String username, String password) login;
+  final Future<bool> Function(String username, String password, String mfaCode)?
+  loginWithMfa;
+  final bool Function()? mfaRequired;
+  final String? Function()? mfaMethod;
+  final String? Function()? loginError;
   final Future<void> Function() logout;
   final Future<void> Function(DateTime? lastSyncDate) setLastSyncDate;
   final Future<int> Function() syncNow;
@@ -51,6 +60,8 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _mfaCodeController = TextEditingController();
+  final _mfaCodeFocusNode = FocusNode();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -64,6 +75,8 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _mfaCodeController.dispose();
+    _mfaCodeFocusNode.dispose();
     super.dispose();
   }
 
@@ -87,24 +100,51 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
       _errorMessage = null;
     });
 
-    final success = await widget.login(
-      _usernameController.text,
-      _passwordController.text,
-    );
+    final isMfaRequired = widget.mfaRequired?.call() ?? false;
+    final success = isMfaRequired && widget.loginWithMfa != null
+        ? await widget.loginWithMfa!(
+            _usernameController.text,
+            _passwordController.text,
+            _mfaCodeController.text.trim(),
+          )
+        : await widget.login(
+            _usernameController.text,
+            _passwordController.text,
+          );
 
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
+      final needsMfa = widget.mfaRequired?.call() ?? false;
+      final loginError = widget.loginError?.call();
+      final mfaMessage = _mfaRequiredMessage(l10n);
       setState(() {
         _isLoading = false;
         if (!success) {
-          _errorMessage = l10n.loginFailed;
+          _errorMessage =
+              loginError ?? (needsMfa ? mfaMessage : l10n.loginFailed);
         } else {
           _passwordController.clear();
+          _mfaCodeController.clear();
           FocusScope.of(context).unfocus();
           context.showToast(l10n.loginSuccess(widget.platformName(l10n)));
         }
       });
+      if (!success && needsMfa) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _mfaCodeFocusNode.requestFocus();
+        });
+      }
     }
+  }
+
+  String _mfaRequiredMessage(AppLocalizations l10n) {
+    return l10n.mfaRequiredMessage(_mfaPlatformName(l10n));
+  }
+
+  String _mfaPlatformName(AppLocalizations l10n) {
+    return widget.mfaMethod?.call()?.toLowerCase() == 'phone'
+        ? l10n.sms
+        : l10n.email;
   }
 
   Future<void> _handleLogout() async {
@@ -135,6 +175,7 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
       setState(() {
         _usernameController.clear();
         _passwordController.clear();
+        _mfaCodeController.clear();
       });
     }
   }
@@ -271,6 +312,7 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
         final l10n = AppLocalizations.of(context)!;
         final username = widget.username();
         final lastSyncDate = widget.lastSyncDate();
+        final isMfaRequired = widget.mfaRequired?.call() ?? false;
 
         return Scaffold(
           appBar: AppBar(
@@ -318,13 +360,41 @@ class _ThirdPartyLoginPageState extends State<ThirdPartyLoginPage> {
                     CustomPasswordField(
                       controller: _passwordController,
                       labelText: l10n.passwordLabel,
-                      textInputAction: TextInputAction.done,
+                      textInputAction: isMfaRequired
+                          ? TextInputAction.next
+                          : TextInputAction.done,
                       onFieldSubmitted: (_) {
-                        if (!_isLoading) {
+                        if (!_isLoading && !isMfaRequired) {
                           _handleLogin();
                         }
                       },
                     ),
+                    if (isMfaRequired) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _mfaCodeController,
+                        focusNode: _mfaCodeFocusNode,
+                        keyboardType: TextInputType.number,
+                        autofillHints: const [AutofillHints.oneTimeCode],
+                        decoration: InputDecoration(
+                          labelText: l10n.mfaCodeLabel,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.key_outlined),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          if (!_isLoading) {
+                            _handleLogin();
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return _mfaRequiredMessage(l10n);
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 16),
                       Text(
