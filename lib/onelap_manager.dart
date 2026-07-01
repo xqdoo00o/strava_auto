@@ -118,6 +118,7 @@ class OneLapManager extends ChangeNotifier {
     await _storage.delete(key: 'onelap_username');
     await _storage.delete(key: 'onelap_password');
     await _storage.delete(key: 'onelap_tokens');
+    _username = null;
     _token = null;
     _tokenExp = null;
     _refreshToken = null;
